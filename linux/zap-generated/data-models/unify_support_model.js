@@ -811,6 +811,59 @@ exports.model = {
 
         ],
       },
+      26 : {
+        name : "SetUser",
+        arguments : [
+          "OperationType",
+          "UserIndex",
+          "UserName",
+          "UserUniqueID",
+          "UserStatus",
+          "UserType",
+          "CredentialRule",
+        ],
+      },
+      27 : {
+        name : "GetUser",
+        arguments : [
+          "UserIndex",
+        ],
+      },
+      29 : {
+        name : "ClearUser",
+        arguments : [
+          "UserIndex",
+        ],
+      },
+      34 : {
+        name : "SetCredential",
+        arguments : [
+          "OperationType",
+          "Credential",
+          "CredentialData",
+          "UserIndex",
+          "UserStatus",
+          "UserType",
+        ],
+      },
+      36 : {
+        name : "GetCredentialStatus",
+        arguments : [
+          "Credential",
+        ],
+      },
+      38 : {
+        name : "ClearCredential",
+        arguments : [
+          "Credential",
+        ],
+      },
+      39 : {
+        name : "UnboltDoor",
+        arguments : [
+          "PINCode",
+        ],
+      },
     },
     attributes : {
       0 : "LockState",
@@ -831,6 +884,8 @@ exports.model = {
       24 : "MinPINCodeLength",
       25 : "MaxRFIDCodeLength",
       26 : "MinRFIDCodeLength",
+      27 : "CredentialRulesSupport",
+      28 : "NumberOfCredentialsSupportedPerUser",
       32 : "EnableLogging",
       33 : "Language",
       34 : "LEDSettings",
@@ -843,11 +898,13 @@ exports.model = {
       41 : "EnableOneTouchLocking",
       42 : "EnableInsideStatusLED",
       43 : "EnablePrivacyModeButton",
+      44 : "LocalProgrammingFeatures",
       48 : "WrongCodeEntryLimit",
       49 : "UserCodeTemporaryDisableTime",
       50 : "SendPINOverTheAir",
       51 : "RequirePINforRFOperation",
       52 : "SecurityLevel",
+      53 : "ExpiringUserTimeout",
       64 : "AlarmMask",
       65 : "KeypadOperationEventMask",
       66 : "RFOperationEventMask",
@@ -856,6 +913,7 @@ exports.model = {
       69 : "KeypadProgrammingEventMask",
       70 : "RFProgrammingEventMask",
       71 : "RFIDProgrammingEventMask",
+      65532 : "FeatureMap",
     },
   },
   258 : {
@@ -2183,6 +2241,13 @@ exports.model = {
       1 : "NetworkManagementState",
     },
   },
+  64787 : {
+    name : "Descriptor",
+    commands : {},
+    attributes : {
+      0 : "DeviceTypeList",
+    },
+  },
 
   enums : {
     "AoXLocatorAntennaMode" : [
@@ -2471,6 +2536,24 @@ exports.model = {
       "RejoinNetwork",
       "JoinUsingMACAssociation",
     ], //
+    "CredentialRuleEnum" : [
+      "Single",
+      "Dual",
+      "Tri",
+    ], //
+    "CredentialTypeEnum" : [
+      "ProgrammingPIN",
+      "PIN",
+      "RFID",
+      "Fingerprint",
+      "FingerVein",
+      "Face",
+    ], //
+    "DataOperationTypeEnum" : [
+      "Add",
+      "Clear",
+      "Modify",
+    ], //
     "DehumidificationControlDehumidificationLockout" : [
       "DehumidificationNotAllowed.",
       "DehumidificationAllowed.",
@@ -2483,12 +2566,44 @@ exports.model = {
       "MeasuredLocally",
       "UpdatedOverTheNetwork",
     ], //
+    "DevTypeId" : [
+      "DoorLock",
+      "DoorLockController",
+      "Fan",
+      "AirPurifier",
+      "RoomAirConditioner",
+      "Cooktop",
+      "ExtractorHood",
+      "OnOffLight",
+      "DimmableLight",
+      "OnOffLightSwitch",
+      "DimmerSwitch",
+      "ColorDimmerSwitch",
+      "LightSensor",
+      "OccupancySensor",
+      "OnOffPluginUnit",
+      "DimmablePlugInUnit",
+      "ColorTemperatureLight",
+      "ExtendedColorLight",
+      "WindowCovering",
+      "WindowCoveringController",
+      "HeatingCoolingUnit",
+      "Thermostat",
+      "TemperatureSensor",
+      "Pump",
+      "PressureSensor",
+      "FlowSensor",
+      "HumiditySensor",
+      "ControlBridge",
+      "OnOffSensor",
+    ], //
     "DoorLockDoorState" : [
       "Open",
       "Closed",
       "ErrorJammed",
       "ErrorForcedOpen",
       "ErrorUnspecified",
+      "DoorAjar",
       "Undefined",
     ], //
     "DoorLockLEDSettings" : [
@@ -2500,6 +2615,7 @@ exports.model = {
       "NotFullyLocked",
       "Locked",
       "Unlocked",
+      "Unlatched",
       "Undefined",
     ], //
     "DoorLockLockType" : [
@@ -2514,6 +2630,7 @@ exports.model = {
       "InterconnectedLock",
       "DeadLatch",
       "DoorFurniture",
+      "Eurocylinder",
     ], //
     "DoorLockSecurityLevel" : [
       "Network",
@@ -2523,6 +2640,7 @@ exports.model = {
       "SilentMode",
       "LowVolume",
       "HighVolume",
+      "MediumVolume",
     ], //
     "DrlkOperEventSource" : [
       "Keypad",
@@ -2564,6 +2682,11 @@ exports.model = {
       "WeekDayScheduleUser",
       "MasterUser",
       "NonAccessUser",
+      "ForcedUser",
+      "DisposableUser",
+      "ExpiringUser",
+      "ScheduleRestrictedUser",
+      "RemoteOnlyUser",
       "NotSupported",
     ], //
     "FanControlFanMode" : [
@@ -3125,6 +3248,7 @@ exports.model = {
       "struct",
       "set",
       "bag",
+      "fabric_idx",
       "ToD",
       "date",
       "UTC",
@@ -3214,6 +3338,11 @@ exports.model = {
       32 : "TamperAlarmFrontEscutcheonRemovedFromMain",
       64 : "ForcedDoorOpenUnderDoorLockedCondition",
     },
+    "DoorLockCredentialRulesSupport" : {
+      1 : "Single",
+      2 : "Dual",
+      4 : "Tri",
+    },
     "DoorLockDefaultConfigurationRegister" : {
       1 : "DefaultEnableLocalProgrammingAttributeIsEnabled",
       2 : "DefaultKeypadInterfaceIsEnabled",
@@ -3221,6 +3350,21 @@ exports.model = {
       32 : "DefaultSoundVolumeIsEnabled",
       64 : "DefaultAutoRelockTimeIsEnabled",
       128 : "DefaultLEDSettingsIsEnabled",
+    },
+    "DoorLockFeatureMap" : {
+      1 : "PINCredential",
+      2 : "RFIDCredential",
+      4 : "FingerCredentials",
+      8 : "Logging",
+      16 : "WeekDayAccessSchedules",
+      32 : "DoorPositionSensor",
+      64 : "FaceCredentials",
+      128 : "CredentialOverTheAirAccess",
+      256 : "User",
+      512 : "Notification",
+      1024 : "YearDayAccessSchedules",
+      2048 : "HolidaySchedules",
+      4096 : "Unbolting",
     },
     "DoorLockKeypadOperationEventMask" : {
       1 : "KeypadOpUnknownOrMS",
@@ -3238,6 +3382,12 @@ exports.model = {
       4 : "KeypadProgPINAdded",
       8 : "KeypadProgPINDeleted",
       16 : "KeypadProgPINChanged",
+    },
+    "DoorLockLocalProgrammingFeatures" : {
+      1 : "AddUsersCredentialsSchedulesLocally",
+      2 : "ModifyUsersCredentialsSchedulesLocally",
+      4 : "ClearUsersCredentialsSchedulesLocally",
+      8 : "AdjustLockSettingsLocally",
     },
     "DoorLockManualOperationEventMask" : {
       1 : "ManualOpUnknownOrMS",
@@ -3540,5 +3690,122 @@ exports.model = {
     "Map56" : {},
     "Map64" : {},
     "Map8" : {},
+  },
+
+  structs : {
+    "NmStateParameters" : [
+      "ProvisioningMode",
+      "UserAccept",
+      "SecurityCode",
+      "Unid",
+      "AllowMultipleInclusions",
+    ],
+    "NetworkManagementState" : [
+      "State",
+      "SupportedStateList",
+      "StateParameters",
+      "RequestedStateParameters",
+    ],
+    "BindingObject" : [
+      "ClusterName",
+      "DestinationUnid",
+      "DestinationEp",
+    ],
+    "ConfigurationParameter" : [
+      "ParameterId",
+      "Value",
+      "Name",
+      "Info",
+      "MinimumValue",
+      "MaximumValue",
+      "DefaultValue",
+      "DisplayFormat",
+      "ReadOnly",
+      "Advanced",
+      "AlteringCapabilities",
+    ],
+    "CoordinateAndOrientation" : [
+      "CoordinateX",
+      "CoordinateY",
+      "CoordinateZ",
+      "OrientationX",
+      "OrientationY",
+      "OrientationZ",
+    ],
+    "CredentialStruct" : [
+      "CredentialType",
+      "CredentialIndex",
+    ],
+    "DeviceTypeStruct" : [
+      "DeviceType",
+      "Revision",
+    ],
+    "DiskIOCounters" : [
+      "UUID",
+      "ReadCount",
+      "WriteCount",
+      "ReadBytes",
+      "WriteBytes",
+    ],
+    "DiskUsageData" : [
+      "UUID",
+      "UsagePercent",
+      "FreeSpaceMB",
+    ],
+    "EstimatedPosition" : [
+      "ApplicationId",
+      "X",
+      "Y",
+      "Z",
+      "DeviationX",
+      "DeviationY",
+      "DeviationZ",
+      "Sequence",
+    ],
+    "IasaceZoneStatusRecord" : [
+      "ZoneID",
+      "ZoneStatus",
+    ],
+    "MinMaxPair" : [
+      "Min",
+      "Max",
+    ],
+    "NetworkInterfaceData" : [
+      "InterfaceName",
+      "BytesSent",
+      "BytesReceived",
+      "PacketsSent",
+      "PacketsReceived",
+      "ErrorsIn",
+      "ErrorsOut",
+      "DropIn",
+      "DropOut",
+    ],
+    "SExtensionFieldSetList" : [
+      "ClusterId",
+      "ExtensionFieldSet",
+    ],
+    "SSceneTable" : [
+      "SceneID",
+      "GroupID",
+      "SceneName",
+      "TransitionTime",
+      "TransitionTime100ms",
+      "SceneTableExtensions",
+    ],
+    "SphericalCoordinates" : [
+      "Azimuth",
+      "Elevation",
+      "Distance",
+    ],
+    "TransitionType" : [
+      "TransitionTime",
+      "HeatSetPoint",
+      "CoolSetPoint",
+    ],
+    "WirelessNetworkInterfaceData" : [
+      "InterfaceName",
+      "SignalStrengthdBm",
+    ],
   }
 }

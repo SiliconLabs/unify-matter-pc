@@ -965,6 +965,20 @@ exports.model = {
           "PosixTimeMs",
         ],
       },
+      3 : {
+        name : "PayloadTestRequest",
+        arguments : [
+          "EnableKey",
+          "Value",
+          "Count",
+        ],
+      },
+      4 : {
+        name : "PayloadTestResponse",
+        arguments : [
+          "Payload",
+        ],
+      },
     },
     /*currently we only support mandatory and feature mandatory attributes, hence only mapping of those as listed here.*/
     attributes : {
@@ -1886,7 +1900,6 @@ exports.model = {
     attributes : {
       0 : "SupportedModes",
       1 : "CurrentMode",
-      3 : "OnMode",
       65528 : "GeneratedCommandList",
       65529 : "AcceptedCommandList",
       65530 : "EventList",
@@ -1917,7 +1930,6 @@ exports.model = {
     attributes : {
       0 : "SupportedModes",
       1 : "CurrentMode",
-      3 : "OnMode",
       65528 : "GeneratedCommandList",
       65529 : "AcceptedCommandList",
       65530 : "EventList",
@@ -2196,18 +2208,6 @@ exports.model = {
     commands : {
       0 : {
         name : "Pause",
-        arguments : [
-
-        ],
-      },
-      1 : {
-        name : "Stop",
-        arguments : [
-
-        ],
-      },
-      2 : {
-        name : "Start",
         arguments : [
 
         ],
@@ -2513,6 +2513,39 @@ exports.model = {
       65533 : "ClusterRevision",
     },
   },
+  144 : {
+    name : "ElectricalPowerMeasurement",
+    /*currently we only support mandatory and feature mandatory commands, hence only mapping of those as listed here.*/
+    commands : {},
+    /*currently we only support mandatory and feature mandatory attributes, hence only mapping of those as listed here.*/
+    attributes : {
+      0 : "PowerMode",
+      1 : "NumberOfMeasurementTypes",
+      2 : "Accuracy",
+      3 : "Ranges",
+      4 : "Voltage",
+      5 : "ActiveCurrent",
+      6 : "ReactiveCurrent",
+      7 : "ApparentCurrent",
+      8 : "ActivePower",
+      9 : "ReactivePower",
+      10 : "ApparentPower",
+      11 : "RMSVoltage",
+      12 : "RMSCurrent",
+      13 : "RMSPower",
+      14 : "Frequency",
+      15 : "HarmonicCurrents",
+      16 : "HarmonicPhases",
+      17 : "PowerFactor",
+      18 : "NeutralCurrent",
+      65528 : "GeneratedCommandList",
+      65529 : "AcceptedCommandList",
+      65530 : "EventList",
+      65531 : "AttributeList",
+      65532 : "FeatureMap",
+      65533 : "ClusterRevision",
+    },
+  },
   145 : {
     name : "ElectricalEnergyMeasurement",
     /*currently we only support mandatory and feature mandatory commands, hence only mapping of those as listed here.*/
@@ -2524,6 +2557,7 @@ exports.model = {
       2 : "CumulativeEnergyExported",
       3 : "PeriodicEnergyImported",
       4 : "PeriodicEnergyExported",
+      5 : "CumulativeEnergyReset",
       65528 : "GeneratedCommandList",
       65529 : "AcceptedCommandList",
       65530 : "EventList",
@@ -2578,6 +2612,41 @@ exports.model = {
       5 : "NumberOfTransitions",
       6 : "DefaultRandomStart",
       7 : "DefaultRandomDuration",
+      65528 : "GeneratedCommandList",
+      65529 : "AcceptedCommandList",
+      65530 : "EventList",
+      65531 : "AttributeList",
+      65532 : "FeatureMap",
+      65533 : "ClusterRevision",
+    },
+  },
+  151 : {
+    name : "Messages",
+    /*currently we only support mandatory and feature mandatory commands, hence only mapping of those as listed here.*/
+    commands : {
+      0 : {
+        name : "PresentMessagesRequest",
+        arguments : [
+          "MessageID",
+          "Priority",
+          "MessageControl",
+          "StartTime",
+          "Duration",
+          "MessageText",
+          "Responses",
+        ],
+      },
+      1 : {
+        name : "CancelMessagesRequest",
+        arguments : [
+          "MessageIDs",
+        ],
+      },
+    },
+    /*currently we only support mandatory and feature mandatory attributes, hence only mapping of those as listed here.*/
+    attributes : {
+      0 : "Messages",
+      1 : "ActiveMessageIDs",
       65528 : "GeneratedCommandList",
       65529 : "AcceptedCommandList",
       65530 : "EventList",
@@ -2764,6 +2833,22 @@ exports.model = {
       2 : "EnergyPriorities",
       3 : "LowPowerModeSensitivities",
       4 : "CurrentLowPowerModeSensitivity",
+      65528 : "GeneratedCommandList",
+      65529 : "AcceptedCommandList",
+      65530 : "EventList",
+      65531 : "AttributeList",
+      65532 : "FeatureMap",
+      65533 : "ClusterRevision",
+    },
+  },
+  156 : {
+    name : "PowerTopology",
+    /*currently we only support mandatory and feature mandatory commands, hence only mapping of those as listed here.*/
+    commands : {},
+    /*currently we only support mandatory and feature mandatory attributes, hence only mapping of those as listed here.*/
+    attributes : {
+      0 : "AvailableEndpoints",
+      1 : "ActiveEndpoints",
       65528 : "GeneratedCommandList",
       65529 : "AcceptedCommandList",
       65530 : "EventList",
@@ -5822,6 +5907,7 @@ exports.model = {
       "Satellite",
       "Cable",
       "Terrestrial",
+      "Ott",
     ], //
     "CharacteristicEnum" : [
       "ForcedSubtitles",
@@ -6198,12 +6284,6 @@ exports.model = {
       "Other",
     ], //
     "ErrorStateEnum" : [
-      "NoError",
-      "UnableToStartOrResume",
-      "UnableToCompleteOperation",
-      "CommandInvalidInState",
-    ], //
-    "ErrorStateEnum" : [
       "FailedToFindChargingDock",
       "Stuck",
       "DustBinMissing",
@@ -6212,6 +6292,12 @@ exports.model = {
       "WaterTankMissing",
       "WaterTankLidOpen",
       "MopCleaningPadMissing",
+    ], //
+    "ErrorStateEnum" : [
+      "NoError",
+      "UnableToStartOrResume",
+      "UnableToCompleteOperation",
+      "CommandInvalidInState",
     ], //
     "ExpressedStateEnum" : [
       "Normal",
@@ -6271,6 +6357,13 @@ exports.model = {
       "InternalOptimization",
       "LocalOptimization",
       "GridOptimization",
+    ], //
+    "FutureMessagePreferenceEnum" : [
+      "Allowed",
+      "Increased",
+      "Reduced",
+      "Disallowed",
+      "Banned",
     ], //
     "GranularityEnum" : [
       "NoTimeGranularity",
@@ -6451,6 +6544,12 @@ exports.model = {
       "Pm3",
       "Bqm3",
     ], //
+    "MessagePriorityEnum" : [
+      "Low",
+      "Medium",
+      "High",
+      "Critical",
+    ], //
     "MetricTypeEnum" : [
       "Pixels",
       "Percentage",
@@ -6460,10 +6559,10 @@ exports.model = {
       "Defrost",
     ], //
     "ModeTag" : [
-      "Normal",
-      "Delicate",
-      "Heavy",
-      "Whites",
+      "NoOptimization",
+      "DeviceOptimization",
+      "LocalOptimization",
+      "GridOptimization",
     ], //
     "ModeTag" : [
       "Manual",
@@ -6474,6 +6573,16 @@ exports.model = {
       "Normal",
       "Heavy",
       "Light",
+    ], //
+    "ModeTag" : [
+      "Normal",
+      "Delicate",
+      "Heavy",
+      "Whites",
+    ], //
+    "ModeTag" : [
+      "RapidCool",
+      "RapidFreeze",
     ], //
     "ModeTag" : [
       "Bake",
@@ -6487,24 +6596,14 @@ exports.model = {
       "Proofing",
     ], //
     "ModeTag" : [
-      "RapidCool",
-      "RapidFreeze",
-    ], //
-    "ModeTag" : [
-      "NoOptimization",
-      "DeviceOptimization",
-      "LocalOptimization",
-      "GridOptimization",
+      "Idle",
+      "Cleaning",
+      "Mapping",
     ], //
     "ModeTag" : [
       "DeepClean",
       "Vacuum",
       "Mop",
-    ], //
-    "ModeTag" : [
-      "Idle",
-      "Cleaning",
-      "Mapping",
     ], //
     "MoveModeEnum" : [
       "Up",
@@ -6603,15 +6702,15 @@ exports.model = {
       "Aliro",
     ], //
     "OperationalStateEnum" : [
+      "SeekingCharger",
+      "Charging",
+      "Docked",
+    ], //
+    "OperationalStateEnum" : [
       "Stopped",
       "Running",
       "Paused",
       "Error",
-    ], //
-    "OperationalStateEnum" : [
-      "SeekingCharger",
-      "Charging",
-      "Docked",
     ], //
     "OptOutStateEnum" : [
       "NoOptOut",
@@ -6663,6 +6762,11 @@ exports.model = {
       "Paused",
       "NotPlaying",
       "Buffering",
+    ], //
+    "PowerModeEnum" : [
+      "Unknown",
+      "Dc",
+      "Ac",
     ], //
     "PowerSourceStatusEnum" : [
       "Unspecified",
@@ -6791,9 +6895,6 @@ exports.model = {
       "Fault",
     ], //
     "StatusCode" : [
-      "CleaningInProgress",
-    ], //
-    "StatusCode" : [
       "Stuck",
       "DustBinMissing",
       "DustBinFull",
@@ -6802,6 +6903,9 @@ exports.model = {
       "WaterTankLidOpen",
       "MopCleaningPadMissing",
       "BatteryLow",
+    ], //
+    "StatusCode" : [
+      "CleaningInProgress",
     ], //
     "StatusCode" : [
       "Busy",
@@ -7267,11 +7371,17 @@ exports.model = {
       8 : "ExtremelyPoor",
     },
     "Feature" : {
-      1 : "TagList",
+      1 : "NodeTopology",
+      2 : "TreeTopology",
+      4 : "SetTopology",
+      8 : "DynamicPowerFlow",
     },
     "Feature" : {
       1 : "Spin",
       2 : "Rinse",
+    },
+    "Feature" : {
+      1 : "TagList",
     },
     "Feature" : {
       1 : "NavigationKeyCodes",
@@ -7287,7 +7397,10 @@ exports.model = {
       4 : "TemperatureStep",
     },
     "Feature" : {
-      1 : "TemperatureUnit",
+      0 : "NoFeatures",
+    },
+    "Feature" : {
+      0 : "NoFeatures",
     },
     "Feature" : {
       1 : "Visual",
@@ -7296,13 +7409,19 @@ exports.model = {
       8 : "SensitivityLevel",
     },
     "Feature" : {
-      1 : "Reset",
-    },
-    "Feature" : {
       1 : "ImportedEnergy",
       2 : "ExportedEnergy",
       4 : "CumulativeEnergy",
       8 : "PeriodicEnergy",
+    },
+    "Feature" : {
+      1 : "Reset",
+    },
+    "Feature" : {
+      1 : "TemperatureUnit",
+    },
+    "Feature" : {
+      1 : "Extended",
     },
     "Feature" : {
       1 : "PacketCounts",
@@ -7315,22 +7434,28 @@ exports.model = {
       1 : "Reset",
     },
     "Feature" : {
-      1 : "Extended",
-    },
-    "Feature" : {
       1 : "PowerAsNumber",
       2 : "PowerInWatts",
       4 : "PowerNumberLimits",
-    },
-    "Feature" : {
-      1 : "TimeSync",
-      2 : "Level",
     },
     "Feature" : {
       1 : "CalendarFormat",
     },
     "Feature" : {
       1 : "ApplicationPlatform",
+    },
+    "Feature" : {
+      1 : "TimeSync",
+      2 : "Level",
+    },
+    "Feature" : {
+      1 : "ReceivedConfirmation",
+      2 : "ConfirmationResponse",
+      4 : "ConfirmationReply",
+      8 : "ProtectedMessages",
+    },
+    "Feature" : {
+      1 : "NameUpdates",
     },
     "Feature" : {
       1 : "MultiSpeed",
@@ -7341,21 +7466,18 @@ exports.model = {
       32 : "AirflowDirection",
     },
     "Feature" : {
-      1 : "NameUpdates",
-    },
-    "Feature" : {
       1 : "Condition",
       2 : "Warning",
       4 : "ReplacementProductList",
     },
     "Feature" : {
+      1 : "PacketCounts",
+      2 : "ErrorCounts",
+    },
+    "Feature" : {
       1 : "Lighting",
       2 : "DeadFrontBehavior",
       4 : "OffOnly",
-    },
-    "Feature" : {
-      1 : "PacketCounts",
-      2 : "ErrorCounts",
     },
     "Feature" : {
       1 : "NameUpdates",
@@ -7379,6 +7501,13 @@ exports.model = {
       16 : "MomentarySwitchMultiPress",
     },
     "Feature" : {
+      1 : "DirectCurrent",
+      2 : "AlternatingCurrent",
+      4 : "PolyphasePower",
+      8 : "Harmonics",
+      16 : "PowerQuality",
+    },
+    "Feature" : {
       1 : "SmokeAlarm",
       2 : "CoAlarm",
     },
@@ -7394,12 +7523,15 @@ exports.model = {
     "Feature" : {
       1 : "ScreenTime",
       2 : "PINManagement",
-      3 : "BlockUnrated",
-      4 : "OnDemandContentRating",
-      5 : "ScheduledContentRating",
+      4 : "BlockUnrated",
+      8 : "OnDemandContentRating",
+      16 : "ScheduledContentRating",
     },
     "Feature" : {
       1 : "Basic",
+    },
+    "Feature" : {
+      1 : "DataModelTest",
     },
     "Feature" : {
       1 : "PowerAdjustment",
@@ -7421,9 +7553,9 @@ exports.model = {
     "Feature" : {
       1 : "AdvancedSeek",
       2 : "VariableSpeed",
-      3 : "TextTracks",
-      4 : "AudioTracks",
-      5 : "AudioAdvance",
+      4 : "TextTracks",
+      8 : "AudioTracks",
+      16 : "AudioAdvance",
     },
     "Feature" : {
       1 : "TimeZone",
@@ -7440,8 +7572,8 @@ exports.model = {
     "Feature" : {
       1 : "ChannelList",
       2 : "LineupInfo",
-      3 : "ElectronicGuide",
-      4 : "RecordProgram",
+      4 : "ElectronicGuide",
+      8 : "RecordProgram",
     },
     "Feature" : {
       1 : "ChargingPreferences",
@@ -7543,6 +7675,13 @@ exports.model = {
     "LampAlarmModeBitmap" : {
       1 : "LampBurnHours",
     },
+    "MessageControlBitmap" : {
+      1 : "ConfirmationRequired",
+      2 : "ResponseRequired",
+      4 : "ReplyMessage",
+      8 : "MessageConfirmed",
+      16 : "MessageProtected",
+    },
     "Mode" : {
       1 : "MotorDirectionReversed",
       2 : "CalibrationMode",
@@ -7595,7 +7734,7 @@ exports.model = {
     "RecordingFlagBitmap" : {
       1 : "Scheduled",
       2 : "RecordSeries",
-      3 : "Recorded",
+      4 : "Recorded",
     },
     "RelayStateBitmap" : {
       1 : "Heat",
@@ -7661,7 +7800,6 @@ exports.model = {
     "SupportedProtocolsBitmap" : {
       1 : "Dash",
       2 : "Hls",
-      2 : "WebRTC",
     },
     "TargetDayOfWeekBitmap" : {
       1 : "Sunday",

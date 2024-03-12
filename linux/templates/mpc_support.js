@@ -12,7 +12,7 @@
  *
  ******************************************************************************/
 
-var unify_matter_mapping = require('../../../unify-matter-common/zap-common/unify_matter_mapping.js')
+var unify_matter_mapping = require('../../zap-common/unify_matter_mapping.js')
 var unify = require('../zap-generated/data-models/unify_support_model.js')
 var matter = require('../zap-generated/data-models/matter_support_model.js')
 

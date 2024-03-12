@@ -1,14 +1,14 @@
 #!/bin/bash
-pushd ../../../../
+pushd ../third_party/connectedhomeip
 
-output_dir=${d}silabs_examples/unify-matter-pc/linux/zap-generated/unify-matter-pc-common/zap-generated
+output_dir=${d}../../../linux/zap-generated/unify-matter-pc-common/zap-generated
 
 rm -rf $output_dir
 mkdir -p $output_dir
 
 ./scripts/tools/zap/generate.py \
   -o $output_dir \
-  ${d}silabs_examples/unify-matter-pc/unify-matter-pc-common/unify-matter-pc.zap
+  ${d}../../../unify-matter-pc-common/unify-matter-pc.zap
 
 # This is a hack to make sure that the af-gen-event.h file is always generated
 touch $output_dir/af-gen-event.h

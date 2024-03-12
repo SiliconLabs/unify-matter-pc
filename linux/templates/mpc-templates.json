@@ -13,9 +13,9 @@
         "mpc-helpers.js"
     ],
     "resources": {
-        "config-data": "../../../../src/app/common/templates/config-data.yaml"
+        "config-data": "../third_party/connectedhomeip/src/app/common/templates/config-data.yaml"
     },
-    "override": "../../../../src/app/zap-templates/common/override.js",
+    "override": "../third_party/connectedhomeip/src/app/zap-templates/common/override.js",
     "templates": [
         {
             "path": "dotdot_mqtt_to_matter.cpp.zapt",
