@@ -69,6 +69,7 @@ static_library("unify-matter-pc-lib") {
     "src/components/mpc_nw_monitor/src/MPCNodeReportables.cpp",
     "src/components/mpc_nw_monitor/src/mpc_node_monitor.cpp",
     "src/components/mpc_nw_monitor/src/mpc_nw_monitor.cpp",
+    "src/components/mpc_nw_monitor/src/mpc_failing_node.cpp",
     "src/mpc_cli.cpp",
     "src/mpc_command_sender.cpp",
     "zap-generated/handlers/dotdot_mqtt_to_matter.cpp",
