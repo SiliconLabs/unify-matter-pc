@@ -169,8 +169,8 @@ void TestReadInteraction::TestReadSender(nlTestSuite * inSuite, void * aContext)
 
     request.SetCallbacks(&mockCallbacks);
 
-    sl_status_t status = request.Send(ctx.GetExchangeManager(), ctx.GetSessionBobToAlice());
-    NL_TEST_ASSERT(inSuite, status == SL_STATUS_OK);
+    CHIP_ERROR  status = request.Send(ctx.GetExchangeManager(), ctx.GetSessionBobToAlice());
+    NL_TEST_ASSERT(inSuite, status == CHIP_NO_ERROR);
     // We don't actually want to deliver that message, because we want to
     // synthesize the read response.  But we don't want it hanging around
     // forever either.
@@ -197,8 +197,8 @@ void TestReadInteraction::TestSubscribeSender(nlTestSuite * inSuite, void * aCon
 
     request.SetCallbacks(&mockCallbacks);
 
-    sl_status_t status = request.Send(ctx.GetExchangeManager(), ctx.GetSessionBobToAlice());
-    NL_TEST_ASSERT(inSuite, status == SL_STATUS_OK);
+    CHIP_ERROR  status = request.Send(ctx.GetExchangeManager(), ctx.GetSessionBobToAlice());
+    NL_TEST_ASSERT(inSuite, status == CHIP_NO_ERROR);
     // We don't actually want to deliver that message, because we want to
     // synthesize the read response.  But we don't want it hanging around
     // forever either.

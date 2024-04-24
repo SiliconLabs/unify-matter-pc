@@ -32,6 +32,31 @@
 using namespace chip;
 using namespace chip::app;
 
+template<typename T>
+void on_device_connected_common(void * context, Messaging::ExchangeManager & exchangeMgr,
+                                const SessionHandle & sessionHandle)
+{
+    CHIP_ERROR err;
+    T * handle = reinterpret_cast<T *>(context);
+    if (!handle)
+        return;
+    if (CHIP_NO_ERROR != (err = handle->Send(exchangeMgr, sessionHandle)))
+    {
+        ChipLogError(NotSpecified, "Send operation failed: %" CHIP_ERROR_FORMAT, err.Format());
+
+        handle->invokeFailureCallback(err);
+    }
+}
+
+template<typename T>
+void on_device_connection_failure_common(void * context, const ScopedNodeId & peerId, CHIP_ERROR error)
+{
+    T * handle = reinterpret_cast<T *>(context);
+    ChipLogError(NotSpecified, "Device connection failure: %" CHIP_ERROR_FORMAT, error.Format());
+
+    handle->invokeFailureCallback(error);
+}
+
 class SessionManagerProvider
 {
 public:
@@ -59,8 +84,8 @@ public:
      * @param attrID attribute ID for the attribute is to be read
      */
     AttributeReadRequest(NodeId dest, EndpointId epID, ClusterId clustID, AttributeId attrID) :
-        mDest(dest), mPath(1, AttributePathParams(epID, clustID, attrID)), mOnConnectedCallback(on_device_connected, this),
-        mOnConnectionFailureCallback(on_device_connection_failure, this)
+        mDest(dest), mPath(1, AttributePathParams(epID, clustID, attrID)), mOnConnectedCallback(on_device_connected_common<AttributeReadRequest>, this),
+        mOnConnectionFailureCallback(on_device_connection_failure_common<AttributeReadRequest>, this)
     {}
 
     /**
@@ -70,8 +95,8 @@ public:
      * @param path vector of AttributePathParams containing the path of attributes that are to be read
      */
     AttributeReadRequest(NodeId dest, std::vector<AttributePathParams> & path) :
-        mDest(dest), mPath(path), mOnConnectedCallback(on_device_connected, this),
-        mOnConnectionFailureCallback(on_device_connection_failure, this)
+        mDest(dest), mPath(path), mOnConnectedCallback(on_device_connected_common<AttributeReadRequest>, this),
+        mOnConnectionFailureCallback(on_device_connection_failure_common<AttributeReadRequest>, this)
     {}
 
     /**
@@ -92,7 +117,12 @@ public:
      * @param exchangeMgr exchange manager linked to available session
      * @param sessionHandle session handle to available session
      */
-    virtual sl_status_t Send(Messaging::ExchangeManager & exchangeMgr, const SessionHandle & sessionHandle);
+    virtual CHIP_ERROR Send(Messaging::ExchangeManager & exchangeMgr, const SessionHandle & sessionHandle);
+
+    void invokeFailureCallback(const CHIP_ERROR err) const
+    {
+        mCallbacks->OnError(err);
+    }
 
 private:
     friend class chip::app::TestReadInteraction;
@@ -108,8 +138,6 @@ private:
     Callback::Callback<OnDeviceConnectionFailure> mOnConnectionFailureCallback;
     static SessionManagerProvider * caseSessProvider;
 
-    static void on_device_connection_failure(void * context, const ScopedNodeId & peerId, CHIP_ERROR error);
-    static void on_device_connected(void * context, Messaging::ExchangeManager & exchangeMgr, const SessionHandle & sessionHandle);
 };
 
 /**
@@ -166,12 +194,96 @@ public:
      * @param exchangeMgr exchange manager linked to available session
      * @param sessionHandle session handle to available session
      */
-    sl_status_t Send(Messaging::ExchangeManager & exchangeMgr, const SessionHandle & sessionHandle) override;
+    CHIP_ERROR Send(Messaging::ExchangeManager & exchangeMgr, const SessionHandle & sessionHandle) override;
 
 private:
     uint16_t mMinInterval;
     uint16_t mMaxInterval;
     bool mKeepSubs;
+};
+
+
+/**
+ * @brief Class to send ReadAttribute matter command from MPC
+ */
+class WriteRequest : public chip::app::WriteClient::Callback
+{
+public:
+    /**
+     * @brief Callback which is called when the Write operation is completed.
+     *
+     * first argument is the transmission status
+     * second argument is the Nodeid to which the transmission was attempted
+     */
+    using WriteCallback = std::function<void(CHIP_ERROR, ScopedNodeId, AttributePathParams)>;
+
+    virtual ~WriteRequest() = default;
+    /**
+     * @brief Construct a new WriteRequest object
+     *
+     * @param dest destination matter node id for which attribute needs to be read
+     * @param epID endpointID in destination to which the cluster and attribute to be read belong
+     * @param clustID cluster ID to which attribute to be read belong
+     * @param attrID attribute ID for the attribute is to be read
+     */
+    WriteRequest(NodeId dest, EndpointId epID, ClusterId clustID, AttributeId attrID, WriteCallback mCB) :
+        mDest(dest), mPath(1, AttributePathParams(epID, clustID, attrID)), mOnConnectedCallback(on_device_connected_common<WriteRequest>, this),
+        mOnConnectionFailureCallback(on_device_connection_failure_common<WriteRequest>, this), mCallbacks(mCB)
+    {}
+
+    /**
+     * @brief Construct a new WriteRequest object
+     *
+     * @param dest destination matter node id for which attribute needs to be read
+     * @param path vector of AttributePathParams containing the path of attributes that are to be read
+     */
+    WriteRequest(NodeId dest, const std::vector<AttributePathParams> & path, WriteCallback mCB) :
+        mDest(dest), mPath(path), mOnConnectedCallback(on_device_connected_common<WriteRequest>, this),
+        mOnConnectionFailureCallback(on_device_connection_failure_common<WriteRequest>, this), mCallbacks(mCB)
+    {}
+
+    /**
+     * @brief Establishes a case session if doesn't already exist and then sends the command
+     */
+    sl_status_t SendCommand(chip::TLV::TLVReader & data);
+
+    /*
+     * @brief Sends the command by re-using already available session
+     *
+     * @param exchangeMgr exchange manager linked to available session
+     * @param sessionHandle session handle to available session
+     */
+    CHIP_ERROR Send(Messaging::ExchangeManager & exchangeMgr, const SessionHandle & sessionHandle);
+
+    void invokeFailureCallback(const CHIP_ERROR err) const
+    {
+            for (const auto& pathParams : mPath) {
+                mCallbacks(err, ScopedNodeId(mDest, 1), pathParams);
+            }
+    }
+
+    /*
+     * Callbacks to WriteClient, these callbacks trigger mCallbacks to indicate status of WriteRequest
+     */
+    void OnResponse(const WriteClient * apWriteClient, const ConcreteDataAttributePath & aPath,
+                                StatusIB attributeStatus) override;
+    void OnError(const WriteClient * apWriteClient, CHIP_ERROR aError) override;
+    void OnDone(WriteClient * apWriteClient) override;
+
+private:
+    friend class chip::app::TestReadInteraction;
+    friend class TestSessionProvider;
+
+    Platform::UniquePtr<WriteClient> client;
+    // WriteClient::Callback * mCallbacks;
+    NodeId mDest;
+    std::vector<AttributePathParams> mPath;
+    chip::Callback::Callback<OnDeviceConnected> mOnConnectedCallback;
+    chip::Callback::Callback<OnDeviceConnectionFailure> mOnConnectionFailureCallback;
+    static SessionManagerProvider * caseSessProvider;
+    chip::TLV::TLVReader mReader;
+    WriteCallback mCallbacks;
+
 };
 
 #ifdef __cplusplus

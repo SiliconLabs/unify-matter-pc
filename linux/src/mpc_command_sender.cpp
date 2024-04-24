@@ -17,31 +17,11 @@
 
 #define LOG_TAG "mpc_command_sender"
 static SessionManagerProvider defaultSessionProvider;
+
 SessionManagerProvider * AttributeReadRequest::caseSessProvider = &defaultSessionProvider;
+SessionManagerProvider * WriteRequest::caseSessProvider = &defaultSessionProvider;
 
-void AttributeReadRequest::on_device_connected(void * context, Messaging::ExchangeManager & exchangeMgr,
-                                               const SessionHandle & sessionHandle)
-{
-    AttributeReadRequest * handle = reinterpret_cast<AttributeReadRequest *>(context);
-    if (!handle)
-        return;
-    if (SL_STATUS_OK != handle->Send(exchangeMgr, sessionHandle))
-    {
-        sl_log_error(LOG_TAG, "Sending command failed");
-        // Not tearing down session here, as it can be re-used for immediate next send else it gets destroyed on certain timeout
-        // anyways
-    }
-}
-
-void AttributeReadRequest::on_device_connection_failure(void * context, const ScopedNodeId & peerId, CHIP_ERROR error)
-{
-    sl_log_error(LOG_TAG, "on_device_connection_failure Some Problem: %s ", error.AsString());
-    AttributeReadRequest * handle = reinterpret_cast<AttributeReadRequest *>(context);
-    if (handle && handle->mCallbacks)
-        handle->mCallbacks->OnError(error);
-}
-
-sl_status_t AttributeReadRequest::Send(Messaging::ExchangeManager & exchangeMgr, const SessionHandle & sessionHandle)
+CHIP_ERROR AttributeReadRequest::Send(Messaging::ExchangeManager & exchangeMgr, const SessionHandle & sessionHandle)
 {
     CHIP_ERROR err;
     ReadPrepareParams params(sessionHandle);
@@ -55,9 +35,9 @@ sl_status_t AttributeReadRequest::Send(Messaging::ExchangeManager & exchangeMgr,
     {
         sl_log_error(LOG_TAG, "Some Problem");
         mCallbacks->OnError(err);
-        return SL_STATUS_FAIL;
+        return err;
     }
-    return SL_STATUS_OK;
+    return CHIP_NO_ERROR;
 }
 
 sl_status_t AttributeReadRequest::SendCommand()
@@ -67,7 +47,7 @@ sl_status_t AttributeReadRequest::SendCommand()
     return SL_STATUS_OK;
 }
 
-sl_status_t SubscribeRequest::Send(Messaging::ExchangeManager & exchangeMgr, const SessionHandle & sessionHandle)
+CHIP_ERROR SubscribeRequest::Send(Messaging::ExchangeManager & exchangeMgr, const SessionHandle & sessionHandle)
 {
     CHIP_ERROR err;
 
@@ -86,7 +66,77 @@ sl_status_t SubscribeRequest::Send(Messaging::ExchangeManager & exchangeMgr, con
     {
         sl_log_error(LOG_TAG, "Some Problem");
         mCallbacks->OnError(err);
-        return SL_STATUS_FAIL;
+        return err;
     }
+    return CHIP_NO_ERROR;
+}
+
+CHIP_ERROR WriteRequest::Send(Messaging::ExchangeManager & exchangeMgr, const SessionHandle & sessionHandle)
+{
+    CHIP_ERROR err;
+
+    client = Platform::MakeUnique<WriteClient>(&exchangeMgr, this, chip::NullOptional);
+
+    mReader.Next(TLV::kTLVType_List, TLV::AnonymousTag());
+    for (const auto& pathParams : mPath) {
+
+        TLV::TLVType containerType;
+        mReader.EnterContainer(containerType);
+        mReader.Next();
+
+        err = client->PutPreencodedAttribute(
+                chip::app::ConcreteAttributePath(pathParams.mEndpointId, pathParams.mClusterId,
+                pathParams.mAttributeId), mReader);
+
+        mReader.ExitContainer(containerType);
+        mReader.Next();
+    }
+
+    if (err != CHIP_NO_ERROR)
+    {
+        ChipLogError(NotSpecified, "PutPreencodedAttribute failed: %" CHIP_ERROR_FORMAT, err.Format());
+        return err;
+    }
+
+    if (CHIP_NO_ERROR != (err = client->SendWriteRequest(sessionHandle)))
+    {
+        ChipLogError(NotSpecified, "Write client send Request failed: %" CHIP_ERROR_FORMAT, err.Format());
+        return err;
+    }
+    return CHIP_NO_ERROR;
+}
+
+sl_status_t WriteRequest::SendCommand(chip::TLV::TLVReader & data)
+{
+    mReader.Init(data);
+    ScopedNodeId nodeId(mDest, 1);
+    caseSessProvider->FindOrEstablishSession(nodeId, &mOnConnectedCallback, &mOnConnectionFailureCallback);
     return SL_STATUS_OK;
+}
+
+void WriteRequest::OnResponse(const WriteClient * apWriteClient, const ConcreteDataAttributePath & aPath,
+                                StatusIB attributeStatus) {
+    CHIP_ERROR err = attributeStatus.ToChipError();
+    if (err != CHIP_NO_ERROR)
+    {
+        ChipLogProgress(NotSpecified, "Write Request Failed with: %" CHIP_ERROR_FORMAT, err.Format());
+        mCallbacks(err, ScopedNodeId(mDest, 1), AttributePathParams(aPath.mEndpointId, aPath.mClusterId, aPath.mAttributeId));
+        return;
+    } else {
+        mCallbacks(err, ScopedNodeId(mDest, 1), AttributePathParams(aPath.mEndpointId, aPath.mClusterId, aPath.mAttributeId));
+    }
+}
+
+void WriteRequest::OnError(const WriteClient * apWriteClient, CHIP_ERROR aError) {
+
+    ChipLogProgress(NotSpecified, "Write Request Failed with: %" CHIP_ERROR_FORMAT, aError.Format());
+    invokeFailureCallback(aError);
+    return;
+}
+
+void WriteRequest::OnDone(WriteClient * apWriteClient) {
+    sl_log_info(LOG_TAG, "Write Request Completed Successfully");
+    Platform::Delete(apWriteClient);
+    free(this);
+    return;
 }
