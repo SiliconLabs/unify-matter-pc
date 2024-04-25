@@ -136,7 +136,6 @@ void WriteRequest::OnError(const WriteClient * apWriteClient, CHIP_ERROR aError)
 
 void WriteRequest::OnDone(WriteClient * apWriteClient) {
     sl_log_info(LOG_TAG, "Write Request Completed Successfully");
-    Platform::Delete(apWriteClient);
-    free(this);
+    Platform::Delete(this);
     return;
 }

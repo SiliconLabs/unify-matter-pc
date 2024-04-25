@@ -126,6 +126,48 @@ void GenerateReportData(nlTestSuite * apSuite, void * apContext, System::PacketB
     NL_TEST_ASSERT(apSuite, err == CHIP_NO_ERROR);
 }
 
+void GenerateWriteResponse(nlTestSuite * apSuite, void * apContext, System::PacketBufferHandle & aPayload)
+{
+    CHIP_ERROR err = CHIP_NO_ERROR;
+    System::PacketBufferTLVWriter writer;
+    writer.Init(std::move(aPayload));
+
+    WriteResponseMessage::Builder writeResponseBuilder;
+    err = writeResponseBuilder.Init(&writer);
+    NL_TEST_ASSERT(apSuite, err == CHIP_NO_ERROR);
+    AttributeStatusIBs::Builder & attributeStatusesBuilder = writeResponseBuilder.CreateWriteResponses();
+    NL_TEST_ASSERT(apSuite, attributeStatusesBuilder.GetError() == CHIP_NO_ERROR);
+    AttributeStatusIB::Builder & attributeStatusIBBuilder = attributeStatusesBuilder.CreateAttributeStatus();
+    NL_TEST_ASSERT(apSuite, attributeStatusIBBuilder.GetError() == CHIP_NO_ERROR);
+
+    AttributePathIB::Builder & attributePathBuilder = attributeStatusIBBuilder.CreatePath();
+    NL_TEST_ASSERT(apSuite, attributePathBuilder.GetError() == CHIP_NO_ERROR);
+    err = attributePathBuilder.Endpoint(1)
+              .Cluster(6)
+              .Attribute(16387)
+              .EndOfAttributePathIB();
+    NL_TEST_ASSERT(apSuite, err == CHIP_NO_ERROR);
+
+    StatusIB::Builder & statusIBBuilder = attributeStatusIBBuilder.CreateErrorStatus();
+    StatusIB statusIB;
+    statusIB.mStatus = chip::Protocols::InteractionModel::Status::Success;
+    NL_TEST_ASSERT(apSuite, statusIBBuilder.GetError() == CHIP_NO_ERROR);
+    statusIBBuilder.EncodeStatusIB(statusIB);
+    err = statusIBBuilder.GetError();
+    NL_TEST_ASSERT(apSuite, err == CHIP_NO_ERROR);
+
+    attributeStatusIBBuilder.EndOfAttributeStatusIB();
+    NL_TEST_ASSERT(apSuite, attributeStatusIBBuilder.GetError() == CHIP_NO_ERROR);
+
+    attributeStatusesBuilder.EndOfAttributeStatuses();
+    NL_TEST_ASSERT(apSuite, attributeStatusesBuilder.GetError() == CHIP_NO_ERROR);
+    writeResponseBuilder.EndOfWriteResponseMessage();
+    NL_TEST_ASSERT(apSuite, writeResponseBuilder.GetError() == CHIP_NO_ERROR);
+
+    err = writer.Finalize(&aPayload);
+    NL_TEST_ASSERT(apSuite, err == CHIP_NO_ERROR);
+}
+
 class TestReadMockCallback : public ReadClient::Callback
 {
 public:
@@ -169,7 +211,7 @@ void TestReadInteraction::TestReadSender(nlTestSuite * inSuite, void * aContext)
 
     request.SetCallbacks(&mockCallbacks);
 
-    CHIP_ERROR  status = request.Send(ctx.GetExchangeManager(), ctx.GetSessionBobToAlice());
+    CHIP_ERROR status = request.Send(ctx.GetExchangeManager(), ctx.GetSessionBobToAlice());
     NL_TEST_ASSERT(inSuite, status == CHIP_NO_ERROR);
     // We don't actually want to deliver that message, because we want to
     // synthesize the read response.  But we don't want it hanging around
@@ -197,7 +239,7 @@ void TestReadInteraction::TestSubscribeSender(nlTestSuite * inSuite, void * aCon
 
     request.SetCallbacks(&mockCallbacks);
 
-    CHIP_ERROR  status = request.Send(ctx.GetExchangeManager(), ctx.GetSessionBobToAlice());
+    CHIP_ERROR status = request.Send(ctx.GetExchangeManager(), ctx.GetSessionBobToAlice());
     NL_TEST_ASSERT(inSuite, status == CHIP_NO_ERROR);
     // We don't actually want to deliver that message, because we want to
     // synthesize the read response.  But we don't want it hanging around
@@ -256,6 +298,112 @@ static void TestCliSendSubscribeSessionFail(nlTestSuite * inSuite, void * aConte
     NL_TEST_ASSERT(inSuite, (mpc_stdin_handle_command(command.c_str()) == SL_STATUS_OK));
 }
 
+namespace chip::app {
+class TestWriteInteraction
+{
+public:
+    static void TestWriteSender(nlTestSuite * inSuite, void * aContext);
+    static void TestWriteSenderFail(nlTestSuite * inSuite, void * aContext);
+};
+} // namespace chip::app
+
+void TestWriteInteraction::TestWriteSender(nlTestSuite * inSuite, void * aContext)
+{
+    CHIP_ERROR err                     = CHIP_NO_ERROR;
+    TestContext & ctx = *static_cast<TestContext *>(aContext);
+    TestSessionProvider testSessPvdr(ctx.GetExchangeManager(), ctx.GetSessionBobToAlice(), false);
+    WriteRequest::caseSessProvider = &testSessPvdr;
+    NodeId aliceNodeId  = ctx.GetAliceFabric()->GetNodeId();
+    uint64_t value = 1;
+
+    System::PacketBufferTLVWriter writer;
+    System::PacketBufferHandle payload = System::PacketBufferHandle::New(System::PacketBuffer::kMaxSize);
+    writer.Init(std::move(payload));
+    TLV::TLVType outerType;
+    std::vector<AttributePathParams> paths;
+
+    writer.StartContainer(chip::TLV::AnonymousTag(), TLV::kTLVType_List, outerType);
+    writer.Put(chip::TLV::ContextTag(chip::to_underlying(chip::app::AttributeDataIB::Tag::kData)), value);
+    writer.EndContainer(outerType);
+
+    NL_TEST_ASSERT(inSuite, err == CHIP_NO_ERROR);
+
+    err = writer.Finalize(&payload);
+
+    NL_TEST_ASSERT(inSuite, err == CHIP_NO_ERROR);
+
+    TLV::TLVReader reader;
+
+    reader.Init(payload->Start(), payload->DataLength());
+
+    paths.push_back(AttributePathParams(1, 6, 16387));
+    CHIP_ERROR err_response = CHIP_ERROR_ACCESS_DENIED;
+    auto mockWriteCallbackFunction = [&err_response](CHIP_ERROR error, ScopedNodeId nodeId, AttributePathParams params) {
+        err_response = error;
+    };
+
+    auto request = chip::Platform::New<WriteRequest>(aliceNodeId, paths, mockWriteCallbackFunction);
+    request->mReader = reader;
+    sl_status_t status = request->SendCommand(reader);
+
+    NL_TEST_ASSERT(inSuite, status == SL_STATUS_OK);
+    // If we drop it, it keeps the message exchange active and causes crash
+    //      if we don't drop it UT framework responds with error response and closes exchange
+    ctx.GetLoopback().mNumMessagesToDrop = 1;
+    ctx.DrainAndServiceIO();
+
+    // Validating a Successful Write, while generating a write response
+    System::PacketBufferHandle buf = System::PacketBufferHandle::New(System::PacketBuffer::kMaxSize);
+    GenerateWriteResponse(inSuite, aContext, buf);
+    err = request->client->ProcessWriteResponseMessage(std::move(buf));
+    request->client->Close();
+    NL_TEST_ASSERT(inSuite, err == CHIP_NO_ERROR);
+    NL_TEST_ASSERT(inSuite, err_response == CHIP_NO_ERROR);
+}
+
+void TestWriteInteraction::TestWriteSenderFail(nlTestSuite * inSuite, void * aContext)
+{
+    CHIP_ERROR err                     = CHIP_NO_ERROR;
+    TestContext & ctx = *static_cast<TestContext *>(aContext);
+    TestSessionProvider testSessPvdr(ctx.GetExchangeManager(), ctx.GetSessionBobToAlice(), false);
+    WriteRequest::caseSessProvider = &testSessPvdr;
+    NodeId aliceNodeId  = ctx.GetAliceFabric()->GetNodeId();
+    uint64_t value = 1;
+
+    System::PacketBufferTLVWriter writer;
+    System::PacketBufferHandle payload = System::PacketBufferHandle::New(System::PacketBuffer::kMaxSize);
+    writer.Init(std::move(payload));
+    TLV::TLVType outerType;
+    std::vector<AttributePathParams> paths;
+
+    writer.StartContainer(chip::TLV::AnonymousTag(), TLV::kTLVType_List, outerType);
+    writer.Put(chip::TLV::ContextTag(chip::to_underlying(chip::app::AttributeDataIB::Tag::kData)), value);
+    writer.EndContainer(outerType);
+
+    NL_TEST_ASSERT(inSuite, err == CHIP_NO_ERROR);
+
+    err = writer.Finalize(&payload);
+
+    NL_TEST_ASSERT(inSuite, err == CHIP_NO_ERROR);
+
+    TLV::TLVReader reader;
+
+    reader.Init(payload->Start(), payload->DataLength());
+
+    paths.push_back(AttributePathParams(1, 6, 16387));
+    CHIP_ERROR err_response = CHIP_ERROR_ACCESS_DENIED;
+    auto mockWriteCallbackFunction = [&err_response](CHIP_ERROR error, ScopedNodeId nodeId, AttributePathParams params) {
+        err_response = error;
+    };
+
+    auto request = chip::Platform::New<WriteRequest>(aliceNodeId, paths, mockWriteCallbackFunction);
+    request->mReader = reader;
+    sl_status_t status = request->SendCommand(reader);
+
+    NL_TEST_ASSERT(inSuite, status == SL_STATUS_OK);
+    ctx.DrainAndServiceIO();
+    NL_TEST_ASSERT(inSuite, err_response.IsIMStatus() && app::StatusIB(err_response).mStatus == Protocols::InteractionModel::Status::UnsupportedEndpoint);
+}
 /**
  *   Test Suite. It lists all the test functions.
  */
@@ -264,6 +412,8 @@ static const nlTest sTests[] =
 {
     NL_TEST_DEF("TestReadSender", TestReadInteraction::TestReadSender),
     NL_TEST_DEF("TestSubscribeSender", TestReadInteraction::TestSubscribeSender),
+    NL_TEST_DEF("TestWriteSender", TestWriteInteraction::TestWriteSender),
+    NL_TEST_DEF("TestWriteSenderFail", TestWriteInteraction::TestWriteSenderFail),
     NL_TEST_DEF("TestCliSendRead", TestCliSendRead),
     NL_TEST_DEF("TestCliSendSubscribe", TestCliSendSubscribe),
     NL_TEST_DEF("TestCliSendSubscribeSessionFail", TestCliSendSubscribeSessionFail),

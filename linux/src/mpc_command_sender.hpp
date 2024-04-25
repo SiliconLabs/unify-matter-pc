@@ -273,6 +273,7 @@ public:
 private:
     friend class chip::app::TestReadInteraction;
     friend class TestSessionProvider;
+    friend class chip::app::TestWriteInteraction;
 
     Platform::UniquePtr<WriteClient> client;
     // WriteClient::Callback * mCallbacks;
