@@ -13,6 +13,7 @@
  ******************************************************************************/
 #include <stdio.h>
 
+#include <boost/algorithm/string.hpp>
 #include "app/server/Server.h"
 #include "attribute.hpp"
 #include "attribute_store.h"
@@ -154,6 +155,53 @@ sl_status_t mpc_attribute_store_get_endpoint_and_node_from_unid(const dotdot_uni
 {
     attribute_store::attribute endpoint_node = mpc_attribute_store_network_helper_get_endpoint_node(unid, dotdot_endpoint);
     return mpc_attribute_store_get_node_and_endpoint_from_attribute(endpoint_node, nodeID, endpointID);
+}
+
+sl_status_t mpc_attribute_store_get_unid_from_matter_peer_nodeid(chip::ScopedNodeId nodeId, attribute_store::attribute & unid)
+{
+    try
+    {
+        auto pFabricInfo = chip::Server::GetInstance().GetFabricTable().FindFabricWithIndex(nodeId.GetFabricIndex());
+        auto mpcfabricid = pFabricInfo->GetCompressedFabricId();
+        auto networkItem = std::to_string(mpcfabricid);
+        networkItem.append(std::string(":"));
+        networkItem.append(std::to_string(nodeId.GetNodeId()));
+
+        attribute_store::attribute currentNode;
+
+        for (auto unidNode : attribute_store::attribute::root().children(ATTRIBUTE_NODE_ID))
+        {
+            auto networkListAttr = unidNode.child_by_type(DOTDOT_ATTRIBUTE_ID_STATE_NETWORK_LIST);
+            if (!networkListAttr.is_valid())
+            {
+                continue;
+            }
+    
+            auto networkList = networkListAttr.reported<std::string>();
+    
+            std::vector<std::string> networkItems;
+            boost::algorithm::split(networkItems, networkList, boost::is_any_of(","));
+    
+            bool found = false;
+            for (const auto& item : networkItems)
+            {
+                if (item == networkItem)
+                {
+                    found = true;
+                    break;
+                }
+            }
+            if (found) {
+                unid = unidNode;
+                return SL_STATUS_OK;
+            }
+        }
+        return SL_STATUS_FAIL;
+    }
+    catch(...)
+    {
+        return SL_STATUS_FAIL;
+    }
 }
 
 sl_status_t mpc_attribute_store_init()

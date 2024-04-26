@@ -13,6 +13,8 @@
 
 #include "app/server/Server.h"
 #include "controller/InvokeInteraction.h"
+#include "mpc_attribute_store.h"
+#include "mpc_failing_node.h"
 #include "sl_status.h"
 #include <functional>
 
@@ -72,6 +74,7 @@ public:
         temp_cmd->m_endpoint_id    = endpoint_id;
         temp_cmd->mCommand         = mCommand;
         temp_cmd->mSendDone        = callback;
+        temp_cmd->mScopedId        = node_id;
         Server::GetInstance().GetCASESessionManager()->FindOrEstablishSession(node_id, &temp_cmd->mOnConnectedCallback,
                                                                               &temp_cmd->mOnConnectionFailureCallback);
     };
@@ -95,6 +98,12 @@ private:
             {
                 ctx->mSendDone.Value()(status.ToChipError(), sessionHandle->GetPeer());
             }
+            attribute_store::attribute unid;
+            if(SL_STATUS_OK == mpc_attribute_store_get_unid_from_matter_peer_nodeid(ctx->mScopedId, unid))
+            {
+                mpc_failing_node_recovery(unid);
+            }
+
             Platform::Delete(ctx);
         };
         auto onFailure = [ctx, &sessionHandle](CHIP_ERROR error) {
@@ -103,6 +112,7 @@ private:
             {
                 ctx->mSendDone.Value()(error, sessionHandle->GetPeer());
             }
+            // TODO: call mpc_failing_node_recovery() if it's not the Tx failure
             Platform::Delete(ctx);
         };
         auto err = Controller::InvokeCommandRequest(&exchangeMgr, sessionHandle, ctx->m_endpoint_id, ctx->mCommand, 
@@ -137,6 +147,7 @@ private:
     Callback::Callback<OnDeviceConnected> mOnConnectedCallback;
     Callback::Callback<OnDeviceConnectionFailure> mOnConnectionFailureCallback;
     Optional<SendDoneCallback> mSendDone;
+    ScopedNodeId mScopedId;
 };
 
 } // namespace mpc

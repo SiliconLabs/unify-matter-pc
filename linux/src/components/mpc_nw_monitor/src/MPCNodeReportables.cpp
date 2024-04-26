@@ -13,6 +13,7 @@
 #include "MPCNodeReportables.hpp"
 #include "mpc_attribute_parser_fwk.h"
 #include "mpc_attribute_store_defined_attribute_types.h"
+#include "mpc_failing_node.h"
 #include "mpc_node_monitor.h"
 #include "matter_pc_main.hpp"
 
@@ -33,6 +34,9 @@ void MPCNodeReportables::MPCNodeReportablesDelegate::OnAttributeData(const Concr
         sl_log_error(LOG_TAG, "OnAttributeData Failure : %s", chip::ErrorStr(error));
         return;
     }
+
+    mpc_failing_node_recovery(mNode);
+
     if (apData == nullptr)
     {
         sl_log_error(LOG_TAG, "empty report received by reportables delegate");

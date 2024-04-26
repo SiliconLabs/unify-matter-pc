@@ -50,3 +50,34 @@ sl_status_t mpc_fetch_saved_state(attribute node, NodeStateNetworkStatus &state)
     }
 }
 
+sl_status_t mpc_failing_node_recovery(attribute node)
+{
+    try
+    {
+        NodeStateNetworkStatus previous_state;
+
+        auto networkStatusNode = node.child_by_type(DOTDOT_ATTRIBUTE_ID_STATE_NETWORK_STATUS);
+        NodeStateNetworkStatus current_state = networkStatusNode.reported<NodeStateNetworkStatus>();
+
+        if (current_state == ZCL_NODE_STATE_NETWORK_STATUS_OFFLINE)
+        {
+            if(SL_STATUS_OK != mpc_fetch_saved_state(node, previous_state))
+            {
+                sl_log_warning(LOG_TAG, "failed to fetch the previous state of the node");
+                return SL_STATUS_FAIL;
+            }
+
+            attribute_store_undefine_reported(node);
+
+            // Changing the node state to previous state
+            networkStatusNode.set_reported<NodeStateNetworkStatus>(previous_state);
+            sl_log_warning(LOG_TAG, "setting the previous state to the failing node");
+        }
+        return SL_STATUS_OK;
+    }
+    catch(...)
+    {
+        sl_log_warning(LOG_TAG, "Error on MPC failing node recovery");
+        return SL_STATUS_FAIL;
+    }
+}

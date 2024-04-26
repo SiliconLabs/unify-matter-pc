@@ -38,6 +38,7 @@
 #include "attribute_resolver_rule.h"
 #include "attribute_store.h"
 #include "matter_pc_main.hpp"
+#include "mpc_failing_node.h"
 
 // Generic includes
 #include <boost/algorithm/string.hpp>
@@ -70,6 +71,16 @@ void MPCAttributeReaderCallback::OnAttributeData(const chip::app::ConcreteDataAt
             sl_log_error(LOG_TAG, "Attribute parse error of  id = %i ", mNodeId);
         }
     }
+    try
+    {
+        attribute unid = attribute(mNodeId).first_parent_or_self(ATTRIBUTE_NODE_ID);
+        mpc_failing_node_recovery(unid);
+    }
+    catch(...)
+    {
+        sl_log_info(LOG_TAG, "Failed to fetch the unid");
+    }
+
     mpc_schedule_contiki();
 }
 

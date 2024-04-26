@@ -14,6 +14,7 @@
 #define MPC_ATTRIBUTE_STORE_H
 
 #include "app/server/Server.h"
+#include "attribute.hpp"
 #include "attribute_store.h"
 #include "sl_status.h"
 #include "unify_dotdot_attribute_store.h"
@@ -59,6 +60,16 @@ sl_status_t mpc_attribute_store_get_endpoint_and_node_from_unid(const dotdot_uni
 */
 attribute_store_node_t mpc_attribute_store_network_helper_get_endpoint_node(const dotdot_unid_t node_unid,
                                                                                dotdot_endpoint_id_t endpoint_id);
+
+/**
+ * @brief get unid from given matter nodeId
+ * 
+ * @param nodeId callback response error
+ * @param unid holds the fetched unify node ID
+ * @returns SL_STATUS_OK on successful unid fetch, SL_STATUS_FAIL on failure
+*/
+sl_status_t mpc_attribute_store_get_unid_from_matter_peer_nodeid(chip::ScopedNodeId nodeId, attribute_store::attribute & unid);
+
 #ifdef __cplusplus
 }
 #endif

@@ -42,6 +42,13 @@ sl_status_t mpc_mark_device_as_failing(attribute node);
 
 sl_status_t mpc_fetch_saved_state(attribute node, NodeStateNetworkStatus &state);
 
+/**
+ * @brief recovers the failing/offline node by changing the state to previous state
+ *
+ * @param node node id of type ATTRIBUTE_NODE_ID corresponding to the end node/device
+ */
+sl_status_t mpc_failing_node_recovery(attribute node);
+
 #ifdef __cplusplus
 }
 #endif
