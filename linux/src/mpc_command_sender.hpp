@@ -54,7 +54,7 @@ void on_device_connection_failure_common(void * context, const ScopedNodeId & pe
     T * handle = reinterpret_cast<T *>(context);
     ChipLogError(NotSpecified, "Device connection failure: %" CHIP_ERROR_FORMAT, error.Format());
 
-    handle->invokeFailureCallback(error);
+    handle->invokeFailureCallback(CHIP_ERROR_CONNECTION_CLOSED_UNEXPECTEDLY);
 }
 
 class SessionManagerProvider
@@ -128,6 +128,8 @@ private:
     friend class chip::app::TestReadInteraction;
     friend class SubscribeRequest;
     friend class TestSessionProvider;
+    template<typename T>
+    friend class MPCCliAttributeReader;
 
     Platform::UniquePtr<ReadClient> client;
     Platform::SharedPtr<BufferedReadCallback> mBufferedReadAdapter;

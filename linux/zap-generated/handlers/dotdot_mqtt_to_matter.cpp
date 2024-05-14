@@ -89,8 +89,10 @@ void myWriteCallbackFunction(CHIP_ERROR error, ScopedNodeId nodeId, AttributePat
     networkItem.append(std::string(":"));
     networkItem.append(std::to_string(nodeId.GetNodeId()));
 
+    attribute currentNodeUnid;
     uint32_t formulatedAttributeId = (params.mClusterId << 16) | params.mAttributeId;
 
+    attribute_store_node_t epNode;
     attribute_store_node_t attrNode;
 
     for (auto unidNode : attribute::root().children(ATTRIBUTE_NODE_ID)) {
@@ -116,7 +118,8 @@ void myWriteCallbackFunction(CHIP_ERROR error, ScopedNodeId nodeId, AttributePat
         if (found) {
             std::string nodeUNID = unidNode.reported<std::string>().c_str();
             const char* nodeUNIDStr = nodeUNID.c_str();
-            attribute_store_node_t epNode = mpc_attribute_store_network_helper_get_endpoint_node(nodeUNIDStr, params.mEndpointId);
+            currentNodeUnid = unidNode;
+            epNode = mpc_attribute_store_network_helper_get_endpoint_node(nodeUNIDStr, params.mEndpointId);
             sl_log_debug(LOG_TAG, "node %d", epNode);
 
             if (epNode == ATTRIBUTE_STORE_INVALID_NODE) {
@@ -138,6 +141,7 @@ void myWriteCallbackFunction(CHIP_ERROR error, ScopedNodeId nodeId, AttributePat
         attribute_store_set_reported_as_desired(attrNode);
         return;
     } else {
+        check_and_mark_failing_node(currentNodeUnid, error);
         attribute_store_set_desired_as_reported(attrNode);
         return;
     }

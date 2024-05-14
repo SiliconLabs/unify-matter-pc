@@ -12,6 +12,8 @@
  *****************************************************************************/
 #include "mpc_command_sender.hpp"
 #include "sl_log.h"
+#include "mpc_failing_node.h"
+#include "mpc_attribute_store.h"
 
 #include "app/server/Server.h"
 
@@ -101,6 +103,11 @@ CHIP_ERROR WriteRequest::Send(Messaging::ExchangeManager & exchangeMgr, const Se
     if (CHIP_NO_ERROR != (err = client->SendWriteRequest(sessionHandle)))
     {
         ChipLogError(NotSpecified, "Write client send Request failed: %" CHIP_ERROR_FORMAT, err.Format());
+        attribute_store::attribute unid;
+        if(SL_STATUS_OK == mpc_attribute_store_get_unid_from_matter_peer_nodeid(ScopedNodeId(mDest, 1), unid))
+        {
+            check_and_mark_failing_node(unid, err);
+        }
         return err;
     }
     return CHIP_NO_ERROR;

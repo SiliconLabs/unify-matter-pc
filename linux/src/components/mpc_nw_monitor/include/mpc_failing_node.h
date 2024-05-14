@@ -14,6 +14,7 @@
 #ifndef MPC_FAILING_NODE_H
 #define MPC_FAILING_NODE_H
 
+#include <lib/core/CHIPError.h>
 #include "sl_status.h"
 #include "attribute.hpp"
 #include "zap-types.h"
@@ -49,6 +50,13 @@ sl_status_t mpc_fetch_saved_state(attribute node, NodeStateNetworkStatus &state)
  */
 sl_status_t mpc_failing_node_recovery(attribute node);
 
+/**
+ * @brief verify CHIP_ERROR and call mpc_mark_device_as_failing
+ *
+ * @param node node id of type ATTRIBUTE_NODE_ID corresponding to the end node/device
+ * @param error transmission status
+ */
+sl_status_t check_and_mark_failing_node(attribute node, CHIP_ERROR error);
 #ifdef __cplusplus
 }
 #endif

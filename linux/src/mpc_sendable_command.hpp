@@ -112,6 +112,13 @@ private:
             {
                 ctx->mSendDone.Value()(error, sessionHandle->GetPeer());
             }
+
+            attribute_store::attribute unid;
+            if(SL_STATUS_OK == mpc_attribute_store_get_unid_from_matter_peer_nodeid(ctx->mScopedId, unid))
+            {
+                check_and_mark_failing_node(unid, error);
+            }
+
             // TODO: call mpc_failing_node_recovery() if it's not the Tx failure
             Platform::Delete(ctx);
         };
@@ -121,6 +128,12 @@ private:
         if (err != CHIP_NO_ERROR && ctx->mRetryCount++ < MPC_MAX_COMMAND_RETRY) {
             Server::GetInstance().GetCASESessionManager()->FindOrEstablishSession(sessionHandle->GetPeer(), 
                                                     &ctx->mOnConnectedCallback, &ctx->mOnConnectionFailureCallback);
+        } else if (err != CHIP_NO_ERROR) {
+            attribute_store::attribute unid;
+            if(SL_STATUS_OK == mpc_attribute_store_get_unid_from_matter_peer_nodeid(ctx->mScopedId, unid))
+            {
+                check_and_mark_failing_node(unid, err);
+            }
         }
     };
 
@@ -138,6 +151,13 @@ private:
         {
             ctx->mSendDone.Value()(error, peerId);
         }
+
+        attribute_store::attribute unid;
+        if(SL_STATUS_OK == mpc_attribute_store_get_unid_from_matter_peer_nodeid(ctx->mScopedId, unid))
+        {
+            check_and_mark_failing_node(unid, CHIP_ERROR_CONNECTION_CLOSED_UNEXPECTEDLY);
+        }
+
         Platform::Delete(ctx);
     };
 

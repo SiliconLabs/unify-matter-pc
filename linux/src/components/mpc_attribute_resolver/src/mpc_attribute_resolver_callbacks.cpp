@@ -87,6 +87,15 @@ void MPCAttributeReaderCallback::OnAttributeData(const chip::app::ConcreteDataAt
 void MPCAttributeReaderCallback::OnError(CHIP_ERROR err)
 {
     sl_log_error(LOG_TAG, "Error reading attribute : %s", chip::ErrorStr(err));
+    try
+    {
+        attribute unid = attribute(mNodeId).first_parent_or_self(ATTRIBUTE_NODE_ID);
+        check_and_mark_failing_node(unid, err);
+    }
+    catch(...)
+    {
+        sl_log_info(LOG_TAG, "Failed to fetch the unid");
+    }
     on_resolver_send_data_complete(RESOLVER_SEND_STATUS_FAIL,
                                    0, // ToDo: Check the significance of this and pass proper value.
                                    mNodeId, RESOLVER_GET_RULE);    

@@ -11,6 +11,7 @@
  *
  *****************************************************************************/
 
+#include <lib/core/CHIPError.h>
 #include "mpc_failing_node.h"
 #include "mpc_attribute_store_defined_attribute_types.h"
 #include "mpc_attribute_store_type_registration.h"
@@ -80,4 +81,14 @@ sl_status_t mpc_failing_node_recovery(attribute node)
         sl_log_warning(LOG_TAG, "Error on MPC failing node recovery");
         return SL_STATUS_FAIL;
     }
+}
+
+sl_status_t check_and_mark_failing_node(attribute node, CHIP_ERROR error)
+{
+    if (error == CHIP_ERROR_TIMEOUT || error == CHIP_ERROR_CONNECTION_CLOSED_UNEXPECTEDLY ||
+        error == CHIP_ERROR_MISSING_SECURE_SESSION || error == CHIP_ERROR_CONNECTION_ABORTED) {
+        sl_status_t status = mpc_mark_device_as_failing(node);
+        return status;
+    }
+    return SL_STATUS_OK;
 }
