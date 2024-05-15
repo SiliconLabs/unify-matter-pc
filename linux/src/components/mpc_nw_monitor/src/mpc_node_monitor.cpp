@@ -58,7 +58,7 @@ static void mpc_on_volatile_attribute_discovery(attribute_store_node_t node, att
     }
 }
 
-sl_status_t mpc_node_monitor_initiate_monitoring(attribute_store::attribute nodeId)
+sl_status_t mpc_node_monitor_initiate_monitoring(attribute_store::attribute nodeId, bool reSubscribe)
 {
     auto setupList = reportables_setup_list.find(nodeId);
 
@@ -85,7 +85,7 @@ sl_status_t mpc_node_monitor_initiate_monitoring(attribute_store::attribute node
             pathList.push_back(AttributePathParams(epID, clustID, attrID));
         });
         NodeId destID   = std::stoull(nodeIdStr);
-        auto reportable = chip::Platform::New<MPCNodeReportables>(attribute(nodeId), destID, pathList, reportablesSubsParam);
+        auto reportable = chip::Platform::New<MPCNodeReportables>(attribute(nodeId), destID, pathList, reportablesSubsParam, reSubscribe);
         if (reportable == nullptr)
         {
             sl_log_error(LOG_TAG, "Failed to allocate reportable");

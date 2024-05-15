@@ -48,8 +48,8 @@ public:
         attribute mNode;               // hold this to update when reports arrive
     };
 
-    MPCNodeReportables(attribute node, NodeId dest, std::vector<AttributePathParams> & path, SubscribeRequestParams params) :
-        mDelegate(this, node), mSubscribe(dest, path, params)
+    MPCNodeReportables(attribute node, NodeId dest, std::vector<AttributePathParams> & path, SubscribeRequestParams params, bool reSubscribe) :
+        mDelegate(this, node), mSubscribe(dest, path, params), mReSubscribe(reSubscribe)
     {}
     sl_status_t Initiate();
 
@@ -58,6 +58,7 @@ public:
 private:
     MPCNodeReportablesDelegate mDelegate;
     SubscribeRequest mSubscribe;
+    bool mReSubscribe;
 };
 
 #endif // MPCNODEREPORTABLES_HPP

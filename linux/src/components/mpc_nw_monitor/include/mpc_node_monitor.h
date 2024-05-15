@@ -34,7 +34,7 @@ sl_status_t mpc_node_monitor_init(void);
  *
  * @param nodeId node id of type ATTRIBUTE_NODE_ID corresponding to the end node/device
  */
-sl_status_t mpc_node_monitor_initiate_monitoring(attribute_store::attribute nodeId);
+sl_status_t mpc_node_monitor_initiate_monitoring(attribute_store::attribute nodeId, bool reSubscribe = false);
 
 /**
  * @brief Stop/Cancel monitoring volatile attributes of given end node/device

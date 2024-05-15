@@ -67,6 +67,16 @@ void MPCNodeReportables::MPCNodeReportablesDelegate::OnError(CHIP_ERROR aError)
 {
     sl_log_error(LOG_TAG, "Reportables setup failed for node %u", mNode);
     mFailureReported = true;
+    if(mCtxt->mReSubscribe){
+      check_and_mark_failing_node(mNode, aError);
+      return;
+    }
+    if (aError == CHIP_ERROR_TIMEOUT) {
+        mpc_node_monitor_cancel_monitoring(mNode);
+        mpc_node_monitor_initiate_monitoring(mNode, true);
+        return;
+    }
+    mpc_mark_device_as_failing(mNode);
     mpc_node_monitor_cancel_monitoring(mNode);
 }
 
