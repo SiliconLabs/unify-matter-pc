@@ -111,6 +111,15 @@ static void TestMarkDeviceAsFailing(nlTestSuite * inSuite, void * aContext)
 
 }
 
+static void TestMarkDeviceOffline(nlTestSuite * inSuite, void * aContext)
+{
+    CHIP_ERROR error = CHIP_ERROR_TIMEOUT;
+    TestContext * ctxt = static_cast<TestContext *>(aContext);
+    auto networkStatusNode = ctxt->mDevNode.child_by_type(DOTDOT_ATTRIBUTE_ID_STATE_NETWORK_STATUS);
+    NL_TEST_ASSERT(inSuite, (check_and_mark_failing_node(ctxt->mDevNode, error) == SL_STATUS_OK));
+    NL_TEST_ASSERT(inSuite, (networkStatusNode.reported<NodeStateNetworkStatus>() == ZCL_NODE_STATE_NETWORK_STATUS_OFFLINE));
+}
+
 /**
  *   Test Suite. It lists all the test functions.
  */
@@ -118,6 +127,7 @@ static void TestMarkDeviceAsFailing(nlTestSuite * inSuite, void * aContext)
 static const nlTest sTests[] =
 {
     NL_TEST_DEF("TestMarkDeviceAsFailing", TestMarkDeviceAsFailing),
+    NL_TEST_DEF("TestMarkDeviceOffline", TestMarkDeviceOffline),
 
     NL_TEST_SENTINEL()
 };
