@@ -20,6 +20,7 @@ the 64-bit version of Raspberry Pi OS Bullseye.
 - [Unify Matter Protocol Controller User Guide](#unify-matter-protocol-controller-user-guide)
   - [Running the Matter PC](#running-the-matter-pc)
     - [Important Configuration Settings](#important-configuration-settings)
+    - [MPC Specific Configuration](#mpc-specific-configuration)
     - [Starting the Matter PC](#starting-the-matter-pc)
   - [Commissioning the UMPC to a Network](#commissioning-the-umpc-to-a-network)
     - [Using the chip-tool to Commission](#using-the-chip-tool-to-commission)
@@ -93,6 +94,27 @@ configuration options. A full list of command-line parameters is provided in the
 
     ```bash
     uic-mpc --mpc.vendor fff1 --mpc.product 8001
+    ```
+
+### MPC Specific Configuration
+
+-   #### Auto Recovery Delay
+ 
+    The throttling delay(in seconds) to wait for the recovery attempt of next 2 
+    nodes in the auto-recovery process.
+ 
+    ```bash
+    uic-mpc --mpc.auto_recovery_delay 2
+    ```
+ 
+-   #### Auto Recovery Time
+ 
+    The threshold time(in seconds) used in auto-recovery of the failing node. 
+    Any node failing for more than time specified by this threshold is not considered 
+    for auto-recovery.
+ 
+    ```bash
+    uic-mpc --mpc.auto_recovery_time 6000
     ```
 
 ### Starting the Matter PC
@@ -220,6 +242,10 @@ the command line take precedence over the options and values in the config file.
   --mpc.pin arg (=9127271)              24 bit pin
   --mpc.report_max arg (=3600)          ceiled max interval for reportables (in
                                         seconds)
+  --mpc.auto_recovery_delay arg (=5)    The waiting time for auto recovery of
+                                        every two nodes (in seconds)
+  --mpc.auto_recovery_time arg (=86400) The threshold time for each node's auto
+                                        recovery (in seconds)
   --mqtt.host arg (=localhost)          MQTT broker hostname or IP
   --mqtt.port arg (=1883)               MQTT broker port
   --mqtt.cafile arg                     Path to file containing the PEM-encoded

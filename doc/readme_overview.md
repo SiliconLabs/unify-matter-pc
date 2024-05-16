@@ -51,6 +51,51 @@ relationship between them.
 See the [GitHub release notes](https://github.com/SiliconLabs/matter/releases)
 for details on feature additions, bug fixes, and known issues.
 
+## Unify MPC Detection and Handling of Failing Nodes
+
+An endnode on Matter Protocol Controller is considered as failing node if any of the following scenarios are observed:
+- Message transmission failure
+- Failed to receive an acknowledgement
+- Periodic attribute reporting failure
+
+### Message Transmission Failure:
+
+When a transmission to a device fails or a command fails to be sent to a node, the node is marked as failing/offline. The Matter Protocol Controller (MPC) 
+updates the state of the Unified Node ID (UNID) to "Offline".  If a transmission to a device fails while it is still being interviewed (during the initial 
+setup process), the node is directly marked as failing, and the state is updated to "Offline".
+
+### Failed to Receive an Acknowledgement:
+
+When a command fails to receive acknowledgement from a node, the node is marked as failing/offline. 
+
+### Periodic Attribute Reporting Failure:
+
+A device has certain attributes that need to be reported. We set up periodic reporting for these attributes, and they're sent at regular intervals. The 
+longest interval between reports is MaxIntervalCeiling which can be adjusted in a configuration, it is defaulting to 60 minutes. 
+These regular updates aren't just for syncing attribute data between the device and our system but it also acts as heartbeat for connection. If we haven't 
+received an update within the MaxIntervalCeiling timeframe, we try to reconnect to the device to confirm  it's still available. If we can't reconnect, we mark it as failing.
+
+## Unify MPC Recovery Of Failing/Offline Nodes:
+
+When nodes are marked as failing or offline, they need to recover from failing or offline states to become online again. There are multiple recovery mechanisms available as explained below.
+
+### Auto-Recovery Process
+
+In the auto-recovery process, nodes that are less likely to recover autonomously are filtered out based on specific criteria. Nodes in non-functional or 
+intervening states, which typically require manual intervention for complete recovery, are excluded from the automatic recovery process. 
+
+#### Recovery After Boot-up
+During system boot-up, we attempt to recover select failing nodes on a a first-fail, first-recover approach, ensuring that nodes with recent failures are 
+addressed promptly. The auto-recovery is done by attempting to re-subscribe to failing nodes that have been marked as failing for less than 24 hours. 
+Auto-recovery attempts are staggered, with a 5-second throttling interval between recovery attempts, and only 2 nodes processed in each attempt. If we 
+successfully re-subscribe to a failing node, we remove its from the failing node status and revert its state to what it was before the failure occurred. 
+Moreover, these criteria settings are configurable to adapt to varying network conditions and failure rates in [mpc specific configuration](./readme_user.md#mpc-specific-configuration).
+
+### Message based Recovery
+
+In case of message transmission failure, the failing status will be removed once a command is successfully sent to the node. Upon removal of the failing status, the state is updated to the last known state. 
+Incase of acknowldegment failure, the failing status will be removed if node recevices any incoming message from the node. Upon removal of the failing status, the state is updated to the last known state.
+
 ## Supported Clusters/Devices
 
 The Unify Matter PC currently supports mapping the following clusters/device
