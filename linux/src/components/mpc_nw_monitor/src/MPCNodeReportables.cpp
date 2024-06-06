@@ -83,6 +83,7 @@ void MPCNodeReportables::MPCNodeReportablesDelegate::OnError(CHIP_ERROR aError)
 void MPCNodeReportables::MPCNodeReportablesDelegate::OnSubscriptionEstablished(SubscriptionId aSubscriptionId)
 {
     sl_log_info(LOG_TAG, "Reportable successfully setup for %u", mNode);
+    mpc_failing_node_recovery(mNode);
 }
 
 sl_status_t MPCNodeReportables::Initiate()

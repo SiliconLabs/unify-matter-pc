@@ -64,6 +64,7 @@ static_library("unify-matter-pc-lib") {
     "src/components/mpc_attribute_store/src/mpc_attribute_store_type_registration.cpp",
     "src/components/mpc_config/src/mpc_config.c",
     "src/components/mpc_datastore/src/mpc_datastore.c",
+    "src/components/mpc_datastore/src/failing_nodes_datastore.cpp",
     "src/components/mpc_nw_monitor/src/MPCNodeReportables.cpp",
     "src/components/mpc_nw_monitor/src/mpc_node_monitor.cpp",
     "src/components/mpc_nw_monitor/src/mpc_nw_monitor.cpp",

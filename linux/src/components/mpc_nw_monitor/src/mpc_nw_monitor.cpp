@@ -28,6 +28,8 @@
 #include "process.h"
 #include "clock.h"
 #include "etimer.h"
+#include "mpc_failing_node.h"
+#include "failing_nodes_datastore.h"
 
 // Matter includes
 #include "app/server/Server.h"
@@ -390,10 +392,11 @@ sl_status_t mpc_nw_monitor_init()
 
     // Listen to events to start node discovery on commision completion
     DeviceLayer::PlatformMgrImpl().AddEventHandler(EventHandler, 0);
-    
+
     // register listeners needed to setup reportables
     mpc_node_monitor_init();
 
+    failingNodeDataStore.initialize();
     process_start(&mpc_nw_mon_process, 0);
 
     // Create attribute tree entries for MPC itself
@@ -432,6 +435,8 @@ sl_status_t mpc_nw_monitor_init()
         mpc_attribute_resolver_helper_set_resolution_listener(unidNode);
         attribute_store_refresh_node_and_children_callbacks(unidNode);
     }
+
+    mpc_failing_node_auto_recovery();
 
     return SL_STATUS_OK;
 }

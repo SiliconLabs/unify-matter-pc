@@ -36,6 +36,8 @@
 #define CONFIG_KEY_PIN_ID "mpc.pin"
 #define CONFIG_KEY_STRICT_DEVICE_MAPPING "mpc.strict_device_mapping"
 #define CONFIG_KEY_REPORT_MAX_INTERVAL "mpc.report_max"
+#define CONFIG_KEY_AUTO_RECOVERY_DELAY "mpc.auto_recovery_delay"
+#define CONFIG_KEY_AUTO_RECOVERY_TIME "mpc.auto_recovery_time"
 
 #ifdef __APPLE__
 #define DEFAULT_INTERFACE "en0"
@@ -48,6 +50,8 @@
 #define DEFAULT_PROD_ID 0x8011
 #define DEFAULT_DISCRIM_ID 0xFFE
 #define DEFAULT_RMAX 3600 // 60 mins
+#define DEFAULT_AUTO_RECOVERY_DELAY 5 // in secs
+#define DEFAULT_AUTO_RECOVERY_TIME 60 * 60 * 24 // 24 hrs
 
 static mpc_config_t config;
 
@@ -67,6 +71,8 @@ int mpc_config_init()
     status |= config_add_int(CONFIG_KEY_DISCRIMINATOR_ID, "12 bit Discriminator ID", DEFAULT_DISCRIM_ID);
     status |= config_add_int(CONFIG_KEY_PIN_ID, "24 bit pin", random_pin);
     status |= config_add_int(CONFIG_KEY_REPORT_MAX_INTERVAL, "ceiled max interval for reportables (in seconds)", DEFAULT_RMAX);
+    status |= config_add_int(CONFIG_KEY_AUTO_RECOVERY_DELAY, "The throttling wait time for auto recovery between two recovery attempts (in seconds)", DEFAULT_AUTO_RECOVERY_DELAY);
+    status |= config_add_int(CONFIG_KEY_AUTO_RECOVERY_TIME, "The threshold time for each node's auto recovery (in seconds)", DEFAULT_AUTO_RECOVERY_TIME);
 
     return status != CONFIG_STATUS_OK;
 }
@@ -102,6 +108,8 @@ sl_status_t mpc_config_fixt_setup()
     config.discriminator = config_get_int_safe(CONFIG_KEY_DISCRIMINATOR_ID) & 0xFFFFFF;
     config.pin           = config_get_int_safe(CONFIG_KEY_PIN_ID) & 0xFFF;
     config.reportMax     = config_get_int_safe(CONFIG_KEY_REPORT_MAX_INTERVAL) & 0xFFFF;
+    config.auto_recovery_delay    = config_get_int_safe(CONFIG_KEY_AUTO_RECOVERY_DELAY);
+    config.auto_recovery_time     = config_get_int_safe(CONFIG_KEY_AUTO_RECOVERY_TIME);
 
     return status == CONFIG_STATUS_OK ? SL_STATUS_OK : SL_STATUS_FAIL;
 }

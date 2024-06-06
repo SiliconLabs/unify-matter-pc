@@ -80,6 +80,10 @@ typedef struct
     uint32_t pin;
     /// 16 bit max interval expected between reportables
     uint16_t reportMax;
+    /// The throttling wait time for auto recovery between two recovery attempts
+    uint16_t auto_recovery_delay;
+    /// The threshold time for failing node auto-recovery
+    uint32_t auto_recovery_time;
 } mpc_config_t;
 
 /**

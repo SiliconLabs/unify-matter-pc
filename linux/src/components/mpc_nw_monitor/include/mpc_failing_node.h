@@ -18,6 +18,9 @@
 #include "sl_status.h"
 #include "attribute.hpp"
 #include "zap-types.h"
+#include "clock.h"
+
+#define MAX_NODES_RECOVERABLE_WITHOUT_DELAY 2
 
 #ifdef __cplusplus
 extern "C" {
@@ -25,6 +28,12 @@ extern "C" {
 
 using namespace attribute_store;
 using namespace std;
+
+struct mpc_failing_node
+{
+    attribute nodeID;
+    clock_time_t failed_time;
+};
 
 /**
  * @brief mark device as failing for given node
@@ -57,6 +66,17 @@ sl_status_t mpc_failing_node_recovery(attribute node);
  * @param error transmission status
  */
 sl_status_t check_and_mark_failing_node(attribute node, CHIP_ERROR error);
+
+/**
+ * @brief starts the auto recovery process on startup
+ */
+sl_status_t mpc_failing_node_auto_recovery();
+
+/**
+ * @brief This API will be triggered upon etimer expiry to initiate the recovery of
+ * the next failing node.
+ */
+void recover_next_failing_node();
 #ifdef __cplusplus
 }
 #endif

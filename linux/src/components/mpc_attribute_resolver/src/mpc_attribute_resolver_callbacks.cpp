@@ -148,6 +148,15 @@ void mpc_attribute_resolver_resolution_completion(attribute_store_node_t mNodeId
 {
     // if not even single app cluster is completely resolved marked as non-functional
     NodeStateNetworkStatus state = ZCL_NODE_STATE_NETWORK_STATUS_ONLINE_NON_FUNCTIONAL;
+    NodeStateNetworkStatus node_state;
+
+    // skipping the resolution completion process for the failing nodes since the auto recovery is taking care of it
+    attribute_store_get_child_reported(mNodeId, DOTDOT_ATTRIBUTE_ID_STATE_NETWORK_STATUS, &node_state, sizeof(node_state));
+    if (node_state == ZCL_NODE_STATE_NETWORK_STATUS_OFFLINE)
+    {
+        sl_log_debug(LOG_TAG, "Skpping refreshing the node %d since it's offline", node_state);
+        return;
+    }
 
     try
     {
