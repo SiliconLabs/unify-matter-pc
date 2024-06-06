@@ -82,8 +82,7 @@ static void generateUNID(string & unid)
     unid.append("mt-" + stream.str());
 }
 
-#ifndef UMPC_DISABLE_DISCOVERY
-class OperationalDiscover : public chip::Dnssd::OperationalBrowseDeleagete
+class OperationalDiscover : public chip::Dnssd::DiscoverNodeDelegate 
 {
     bool needs_update(attribute node)
     {
@@ -114,8 +113,16 @@ class OperationalDiscover : public chip::Dnssd::OperationalBrowseDeleagete
         }
     }
     
-    void OnOperationalNodeDiscovered(const chip::Dnssd::OperationalNodeData & operationalData) override
+    void OnNodeDiscovered(const chip::Dnssd::DiscoveredNodeData & discoveredNodeData) override
     {
+        
+        if (!discoveredNodeData.Is<chip::Dnssd::OperationalNodeBrowseData>()) {
+            // not Operational Node Browse Data
+            return;
+        }
+        
+        auto & operationalData  = discoveredNodeData.Get<chip::Dnssd::OperationalNodeBrowseData>();
+        
         sl_log_debug(LOG_TAG, "Found matter node with node ID " ChipLogFormatX64 ":" ChipLogFormatX64, 
                             ChipLogValueX64(operationalData.peerId.GetCompressedFabricId()),
                             ChipLogValueX64(operationalData.peerId.GetNodeId()));
@@ -203,7 +210,7 @@ class OperationalDiscover : public chip::Dnssd::OperationalBrowseDeleagete
         mpc_schedule_contiki();
     }
 };
-#endif
+
 
 static void mpc_on_ep_change_cb(attribute_store_node_t node, attribute_store_change_t change)
 {
@@ -253,15 +260,18 @@ static void mpc_on_ep_change_cb(attribute_store_node_t node, attribute_store_cha
 
 static void mpc_start_node_discovery()
 {
-#ifndef UMPC_DISABLE_DISCOVERY
     static OperationalDiscover mDNSdiscover;
+    static chip::Dnssd::DiscoveryContext * mContext = nullptr;
+    sl_log_debug(LOG_TAG, "in mpc_start_node_discovery()");
+
     // Start discovering nodes
     if (chip::Dnssd::Resolver::Instance().IsInitialized())
     {
-        chip::Dnssd::Resolver::Instance().SetOperationalBrowseDelegate(&mDNSdiscover);
-        chip::Dnssd::Resolver::Instance().DiscoverOperational();
+        mContext = Platform::New<chip::Dnssd::DiscoveryContext>();
+        mContext->SetDiscoveryDelegate(&mDNSdiscover);
+        chip::Dnssd::Resolver::Instance().StartDiscovery(chip::Dnssd::DiscoveryType::kOperational, chip::Dnssd::DiscoveryFilter(), *mContext);
+        sl_log_debug(LOG_TAG, "in mpc_start_node_discovery()mResolver Init done");
     }
-#endif
 }
 
 static void find_mpc_and_update_networklist()
