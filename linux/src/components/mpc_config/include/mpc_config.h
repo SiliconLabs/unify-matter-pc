@@ -84,6 +84,8 @@ typedef struct
     uint16_t auto_recovery_delay;
     /// The threshold time for failing node auto-recovery
     uint32_t auto_recovery_time;
+    /// Flag to set the connectivity interface
+    bool wifi;
 } mpc_config_t;
 
 /**

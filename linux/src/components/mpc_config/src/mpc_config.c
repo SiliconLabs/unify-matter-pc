@@ -38,6 +38,7 @@
 #define CONFIG_KEY_REPORT_MAX_INTERVAL "mpc.report_max"
 #define CONFIG_KEY_AUTO_RECOVERY_DELAY "mpc.auto_recovery_delay"
 #define CONFIG_KEY_AUTO_RECOVERY_TIME "mpc.auto_recovery_time"
+#define CONFIG_KEY_WIFI "mpc.wifi"
 
 #ifdef __APPLE__
 #define DEFAULT_INTERFACE "en0"
@@ -52,6 +53,7 @@
 #define DEFAULT_RMAX 3600 // 60 mins
 #define DEFAULT_AUTO_RECOVERY_DELAY 5 // in secs
 #define DEFAULT_AUTO_RECOVERY_TIME 60 * 60 * 24 // 24 hrs
+#define DEFAULT_WIFI false
 
 static mpc_config_t config;
 
@@ -73,6 +75,7 @@ int mpc_config_init()
     status |= config_add_int(CONFIG_KEY_REPORT_MAX_INTERVAL, "ceiled max interval for reportables (in seconds)", DEFAULT_RMAX);
     status |= config_add_int(CONFIG_KEY_AUTO_RECOVERY_DELAY, "The throttling wait time for auto recovery between two recovery attempts (in seconds)", DEFAULT_AUTO_RECOVERY_DELAY);
     status |= config_add_int(CONFIG_KEY_AUTO_RECOVERY_TIME, "The threshold time for each node's auto recovery (in seconds)", DEFAULT_AUTO_RECOVERY_TIME);
+    status |= config_add_bool(CONFIG_KEY_WIFI, "MPC Wi-Fi Connectivity", DEFAULT_WIFI);
 
     return status != CONFIG_STATUS_OK;
 }
@@ -110,7 +113,7 @@ sl_status_t mpc_config_fixt_setup()
     config.reportMax     = config_get_int_safe(CONFIG_KEY_REPORT_MAX_INTERVAL) & 0xFFFF;
     config.auto_recovery_delay    = config_get_int_safe(CONFIG_KEY_AUTO_RECOVERY_DELAY);
     config.auto_recovery_time     = config_get_int_safe(CONFIG_KEY_AUTO_RECOVERY_TIME);
-
+    config.wifi                   = config_get_as_bool(CONFIG_KEY_WIFI, &config.wifi);
     return status == CONFIG_STATUS_OK ? SL_STATUS_OK : SL_STATUS_FAIL;
 }
 
