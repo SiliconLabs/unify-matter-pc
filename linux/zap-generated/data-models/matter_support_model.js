@@ -1599,7 +1599,7 @@ exports.model = {
       3 : {
         name : "StayActiveRequest",
         arguments : [
-
+          "StayActiveDuration",
         ],
       },
       4 : {
@@ -6565,24 +6565,20 @@ exports.model = {
       "GridOptimization",
     ], //
     "ModeTag" : [
+      "Normal",
+      "Heavy",
+      "Light",
+    ], //
+    "ModeTag" : [
       "Manual",
       "TimeOfUse",
       "SolarCharging",
     ], //
     "ModeTag" : [
       "Normal",
-      "Heavy",
-      "Light",
-    ], //
-    "ModeTag" : [
-      "Normal",
       "Delicate",
       "Heavy",
       "Whites",
-    ], //
-    "ModeTag" : [
-      "RapidCool",
-      "RapidFreeze",
     ], //
     "ModeTag" : [
       "Bake",
@@ -6596,14 +6592,18 @@ exports.model = {
       "Proofing",
     ], //
     "ModeTag" : [
-      "Idle",
-      "Cleaning",
-      "Mapping",
+      "RapidCool",
+      "RapidFreeze",
     ], //
     "ModeTag" : [
       "DeepClean",
       "Vacuum",
       "Mop",
+    ], //
+    "ModeTag" : [
+      "Idle",
+      "Cleaning",
+      "Mapping",
     ], //
     "MoveModeEnum" : [
       "Up",
@@ -6895,6 +6895,9 @@ exports.model = {
       "Fault",
     ], //
     "StatusCode" : [
+      "CleaningInProgress",
+    ], //
+    "StatusCode" : [
       "Stuck",
       "DustBinMissing",
       "DustBinFull",
@@ -6903,9 +6906,6 @@ exports.model = {
       "WaterTankLidOpen",
       "MopCleaningPadMissing",
       "BatteryLow",
-    ], //
-    "StatusCode" : [
-      "CleaningInProgress",
     ], //
     "StatusCode" : [
       "Busy",
@@ -7131,15 +7131,15 @@ exports.model = {
       16 : "FanFail",
     },
     "AlarmBitmap" : {
+      1 : "DoorOpen",
+    },
+    "AlarmBitmap" : {
       1 : "InflowError",
       2 : "DrainError",
       4 : "DoorError",
       8 : "TempTooLow",
       16 : "TempTooHigh",
       32 : "WaterLevelError",
-    },
-    "AlarmBitmap" : {
-      1 : "DoorOpen",
     },
     "AlarmModeBitmap" : {
       1 : "Visual",
@@ -7415,23 +7415,20 @@ exports.model = {
       8 : "PeriodicEnergy",
     },
     "Feature" : {
-      1 : "Reset",
-    },
-    "Feature" : {
       1 : "TemperatureUnit",
     },
     "Feature" : {
-      1 : "Extended",
+      1 : "Reset",
     },
     "Feature" : {
       1 : "PacketCounts",
       2 : "ErrorCounts",
     },
     "Feature" : {
-      1 : "Watermarks",
+      1 : "Extended",
     },
     "Feature" : {
-      1 : "Reset",
+      1 : "Watermarks",
     },
     "Feature" : {
       1 : "PowerAsNumber",
@@ -7439,14 +7436,25 @@ exports.model = {
       4 : "PowerNumberLimits",
     },
     "Feature" : {
+      1 : "Reset",
+    },
+    "Feature" : {
       1 : "CalendarFormat",
+    },
+    "Feature" : {
+      1 : "TimeSync",
+      2 : "Level",
     },
     "Feature" : {
       1 : "ApplicationPlatform",
     },
     "Feature" : {
-      1 : "TimeSync",
-      2 : "Level",
+      1 : "MultiSpeed",
+      2 : "Auto",
+      4 : "Rocking",
+      8 : "Wind",
+      16 : "Step",
+      32 : "AirflowDirection",
     },
     "Feature" : {
       1 : "ReceivedConfirmation",
@@ -7456,14 +7464,6 @@ exports.model = {
     },
     "Feature" : {
       1 : "NameUpdates",
-    },
-    "Feature" : {
-      1 : "MultiSpeed",
-      2 : "Auto",
-      4 : "Rocking",
-      8 : "Wind",
-      16 : "Step",
-      32 : "AirflowDirection",
     },
     "Feature" : {
       1 : "Condition",
@@ -7521,14 +7521,14 @@ exports.model = {
       64 : "HeatingSource",
     },
     "Feature" : {
+      1 : "Basic",
+    },
+    "Feature" : {
       1 : "ScreenTime",
       2 : "PINManagement",
       4 : "BlockUnrated",
       8 : "OnDemandContentRating",
       16 : "ScheduledContentRating",
-    },
-    "Feature" : {
-      1 : "Basic",
     },
     "Feature" : {
       1 : "DataModelTest",
