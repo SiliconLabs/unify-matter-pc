@@ -35,6 +35,7 @@
 #include "app/server/Server.h"
 #include "crypto/CHIPCryptoPAL.h"
 #include "lib/core/DataModelTypes.h"
+#include <app/InteractionModelEngine.h>
 #include <lib/dnssd/Resolver.h>
 #include <lib/dnssd/ResolverProxy.h>
 #include <platform/CHIPDeviceLayer.h>
@@ -276,17 +277,17 @@ static void mpc_start_node_discovery()
     }
 }
 
-static void find_mpc_and_update_networklist()
+static void find_mpc_and_update_networklist(FabricIndex removeIndex)
 {
     attribute mpcNode;
     string networkList;
 
     if (!attribute::root().child_count())
     {
-        sl_log_warning(LOG_TAG, "find_mpc_and_update_networklist() called when before MPC entry");
+        sl_log_warning(LOG_TAG, "find_mpc_and_update_networklist() called before MPC entry");
         return;
     }
-    // if there is only one node in under root, then it must belong to MPC itself
+    // if there is only one node under root, then it must belong to MPC itself
     if (attribute::root().child_count() == 1)
     {
         mpcNode = attribute::root().child_by_type(ATTRIBUTE_NODE_ID);
@@ -300,14 +301,19 @@ static void find_mpc_and_update_networklist()
         auto networkListItem = to_string(fabric->GetCompressedFabricId());
         networkListItem.append(":");
         networkListItem.append(to_string(fabric->GetNodeId()));
-
-        // append if it can fit into attribute storage size, else warn
-        if (networkList.size() + networkListItem.size() + 1 < ATTRIBUTE_STORE_MAXIMUM_VALUE_LENGTH)
-            networkList.append(networkListItem + ",");
+        if (fabric->GetFabricIndex() != removeIndex)
+        {
+            // append if it can fit into attribute storage size
+            if (networkList.size() + networkListItem.size() + 1 < ATTRIBUTE_STORE_MAXIMUM_VALUE_LENGTH)
+                networkList.append(networkListItem + ",");
+            else
+                sl_log_warning(LOG_TAG, "networkListItem not appended because of size constraint, update attribute storage strategy");
+        }
         else
-            sl_log_warning(LOG_TAG, "networkListItem not appended because of size constraint, update attribute storage strategy");
-
-        // check if mpcNode is already found we skip the search and move to check iteration
+        {
+            sl_log_info(LOG_TAG, "Removing fabric index %d from network list", fabric->GetFabricIndex());
+        }
+        // check if mpcNode is already found, we skip the search and move to check iteration
         if (mpcNode.is_valid())
             continue;
         // else search for node with networkList entry matching that of MPC
@@ -318,17 +324,32 @@ static void find_mpc_and_update_networklist()
                 mpcNode = node;
         }
     }
-    networkList.pop_back(); // remove the last "," delimiter
-
     if (!mpcNode.is_valid())
     {
         sl_log_error(LOG_TAG, "did not find node that belongs to MPC in attribute store!");
         return;
     }
-    attribute_store_set_reported_string(mpcNode.emplace_node(DOTDOT_ATTRIBUTE_ID_STATE_NETWORK_LIST), networkList.c_str());
-    mpcNode.emplace_node(DOTDOT_ATTRIBUTE_ID_STATE_NETWORK_STATUS)
-        .set_reported<NodeStateNetworkStatus>(ZCL_NODE_STATE_NETWORK_STATUS_ONLINE_FUNCTIONAL);
+    if (networkList.size() != 0)
+    {
+        networkList.pop_back(); // remove the last "," delimiter
+        attribute_store_set_reported_string(mpcNode.emplace_node(DOTDOT_ATTRIBUTE_ID_STATE_NETWORK_LIST), networkList.c_str());
+        mpcNode.emplace_node(DOTDOT_ATTRIBUTE_ID_STATE_NETWORK_STATUS)
+            .set_reported<NodeStateNetworkStatus>(ZCL_NODE_STATE_NETWORK_STATUS_ONLINE_FUNCTIONAL);
+    }
+    else
+    {
+            auto networkListAttr = mpcNode.child_by_type(DOTDOT_ATTRIBUTE_ID_STATE_NETWORK_LIST);
+            if (!networkListAttr.is_valid())
+            {
+                sl_log_error(LOG_TAG, "did not find node that belongs to MPC in attribute store!");
+                return;
+            }
+            attribute_store_undefine_reported(networkListAttr);
+            mpcNode.emplace_node(DOTDOT_ATTRIBUTE_ID_STATE_NETWORK_STATUS)
+                .set_reported<NodeStateNetworkStatus>(ZCL_NODE_STATE_NETWORK_STATUS_ONLINE_NON_FUNCTIONAL);
+    }
 }
+
 
 static void EventHandler(const DeviceLayer::ChipDeviceEvent * event, intptr_t arg)
 {
@@ -354,7 +375,7 @@ static sl_status_t mpc_populate_attribute_store()
         
         if (chip::Server::GetInstance().GetFabricTable().FabricCount() != 0)
         {
-            find_mpc_and_update_networklist();
+            find_mpc_and_update_networklist(kUndefinedFabricIndex);
             mpc_start_node_discovery();
         }
         // else we won't populate networkList here as the MPC would not yet be commisioned
@@ -372,13 +393,37 @@ class MPCFabricDelegate : public FabricTable::Delegate
     {
         sl_log_info(LOG_TAG, "fabric with ID %x added at index %u",
                     fabricTable.FindFabricWithIndex(fabricIndex)->GetCompressedFabricId(), fabricIndex);
-        find_mpc_and_update_networklist();
+        find_mpc_and_update_networklist(kUndefinedFabricIndex);
     }
     void OnFabricRemoved(const FabricTable & fabricTable, FabricIndex fabricIndex) override
     {
         sl_log_info(LOG_TAG, "fabric count for MPC [%u]", fabricTable.FabricCount());
-        find_mpc_and_update_networklist();
-        // TODO: remove all end node belonging to the fabric from attribute tree?
+        
+    }
+    void FabricWillBeRemoved(const FabricTable & fabricTable, FabricIndex fabricIndex) override
+    {
+        sl_log_info(LOG_TAG, "MPC uncommissioned");
+        find_mpc_and_update_networklist(fabricIndex);
+        for (auto unids : attribute::root().children(ATTRIBUTE_NODE_ID)) 
+        {
+            auto nwListAttribute = unids.child_by_type(DOTDOT_ATTRIBUTE_ID_STATE_NETWORK_LIST);       
+            if (nwListAttribute.is_valid()) 
+            {
+                std::string nwList = nwListAttribute.reported<std::string>();           
+                if (!nwList.empty() && nwList.find(":") != std::string::npos) 
+                {
+                    sl_log_debug(LOG_TAG, "Node nwlist: %s", nwList.c_str());
+                    std::string nodeIdStr = nwList.erase(0, nwList.find(":") + 1);
+                    sl_log_debug(LOG_TAG, "Node ID: %s [%llu]", nodeIdStr.c_str(), stoull(nodeIdStr));               
+                    NodeId nodeId = stoull(nodeIdStr);
+                    if (unids.is_valid()) 
+                    {
+                        chip::app::InteractionModelEngine::GetInstance()->ShutdownSubscriptions(fabricIndex, nodeId);
+                        unids.delete_node();
+                    }
+                }
+            }
+        }
     }
 };
 
