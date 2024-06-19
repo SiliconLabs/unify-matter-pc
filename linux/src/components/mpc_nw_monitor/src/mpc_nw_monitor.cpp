@@ -115,6 +115,24 @@ class OperationalDiscover : public chip::Dnssd::DiscoverNodeDelegate
             process_post(&mpc_nw_mon_process, MPC_INTERVIEW_TIMER_SET_EVENT, (void *)INTERVIEW_DELAY_MSEC);
         }
     }
+    void mpc_node_removal_handle(attribute unid)
+    {
+        attribute node= unid.child_by_type(DOTDOT_ATTRIBUTE_ID_STATE_NETWORK_LIST);
+        auto node_nw_list_str = node.reported<string>();
+        if (!node_nw_list_str.empty() && node_nw_list_str.find(":") != std::string::npos)
+        {
+            std::string nodeIdStr = node_nw_list_str.erase(0, node_nw_list_str.find(":") + 1);
+            sl_log_debug(LOG_TAG, "Node ID: %s [%llu]", nodeIdStr.c_str(), stoull(nodeIdStr));               
+            NodeId nodeId = stoull(nodeIdStr);
+             // TODO: Multifabtric support requires extracting index from networklist
+            chip::app::InteractionModelEngine::GetInstance()->ShutdownSubscriptions(1, nodeId);
+            unid.delete_node();
+        }
+        else
+        {
+            sl_log_debug(LOG_TAG,"node_nw_list_str is empty");
+        }
+    }
     
     void OnNodeDiscovered(const chip::Dnssd::DiscoveredNodeData & discoveredNodeData) override
     {
@@ -162,6 +180,16 @@ class OperationalDiscover : public chip::Dnssd::DiscoverNodeDelegate
                         break;
                     }
                     node = attribute(ATTRIBUTE_STORE_INVALID_NODE);
+                }
+                if(operationalData.hasZeroTTL)
+                {
+                    if (node.is_valid())
+                    {
+                        attribute unid = node.parent();
+                        sl_log_debug(LOG_TAG, "Removing node %s",unid.reported<string>().c_str());
+                        mpc_node_removal_handle(unid);
+                    }
+                    return;
                 }
 
                 if (node.is_valid())
