@@ -14,7 +14,7 @@ Once a Unify SDK is setup, the Matter PC can be started.
 The following documentation assumes that you have built the Unify Matter PC
 application by following the _[Build Guide](./readme_building.md)_ and have
 transferred the _`unify-matter-pc`_ to your Raspberry Pi 4 (RPi4) running
-the 64-bit version of Raspberry Pi OS Bullseye.
+the 64-bit version of Raspberry Pi OS bookworm.
 
 
 - [Unify Matter Protocol Controller User Guide](#unify-matter-protocol-controller-user-guide)
