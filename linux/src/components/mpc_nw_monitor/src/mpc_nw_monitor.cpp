@@ -117,15 +117,47 @@ class OperationalDiscover : public chip::Dnssd::DiscoverNodeDelegate
     }
     void mpc_node_removal_handle(attribute unid)
     {
+        NodeStateNetworkStatus state = unid.child_by_type(DOTDOT_ATTRIBUTE_ID_STATE_NETWORK_STATUS).reported<NodeStateNetworkStatus>();
+
+        // Search for the node in pending_interviews list
+        auto nodeEntryToDelete = std::find_if(pending_interviews.begin(), pending_interviews.end(), [&unid](const interviewable_node &n) {
+            return n.node == unid;
+        });
+        // proceed to delete the node entry from the queue
+        if (nodeEntryToDelete != pending_interviews.end())
+        {
+            if (nodeEntryToDelete == pending_interviews.begin() && (nodeEntryToDelete + 1) != pending_interviews.end())
+            {
+                clock_time_t nextTrigger = 0;
+                if (clock_time() < (nodeEntryToDelete + 1)->interviewAfter)
+                {
+                    nextTrigger = (nodeEntryToDelete + 1)->interviewAfter - clock_time();
+                }
+                process_post(&mpc_nw_mon_process, MPC_INTERVIEW_TIMER_SET_EVENT, (void *)nextTrigger);
+            }
+            // Erase the node entry from the vector
+            pending_interviews.erase(nodeEntryToDelete);
+
+            if (state != ZCL_NODE_STATE_NETWORK_STATUS_ONLINE_INTERVIEWING)
+            {
+                // Returning since the interview is not started and no further actions are required
+                return;
+            }
+        }
+
         attribute node= unid.child_by_type(DOTDOT_ATTRIBUTE_ID_STATE_NETWORK_LIST);
         auto node_nw_list_str = node.reported<string>();
         if (!node_nw_list_str.empty() && node_nw_list_str.find(":") != std::string::npos)
         {
             std::string nodeIdStr = node_nw_list_str.erase(0, node_nw_list_str.find(":") + 1);
             sl_log_debug(LOG_TAG, "Node ID: %s [%llu]", nodeIdStr.c_str(), stoull(nodeIdStr));               
-            NodeId nodeId = stoull(nodeIdStr);
-             // TODO: Multifabtric support requires extracting index from networklist
-            chip::app::InteractionModelEngine::GetInstance()->ShutdownSubscriptions(1, nodeId);
+
+            if (state != ZCL_NODE_STATE_NETWORK_STATUS_ONLINE_INTERVIEWING)
+            {
+                NodeId nodeId = stoull(nodeIdStr);
+                // TODO: Multifabtric support requires extracting index from networklist
+                chip::app::InteractionModelEngine::GetInstance()->ShutdownSubscriptions(1, nodeId);
+            }
             unid.delete_node();
         }
         else
