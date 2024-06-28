@@ -10,18 +10,20 @@
  * sections of the MSLA applicable to Source Code.
  *
  *****************************************************************************/
+
 #include "mpc_command_sender.hpp"
+#include "mpc_matter_interfaces.hpp"
 
 /**
- * @defgroup mpc_sessionprovider_mock
+ * @defgroup mpc_matter_interfaces_mock
  * @ingroup mpc_components
  * @brief Implements session provider mock class for unit test
  *
  * @{
  */
 
-#ifndef MPC_SESSIONPROVIDER_MOCK_H
-#define MPC_SESSIONPROVIDER_MOCK_H
+#ifndef MPC_MATTER_INTERFACES_MOCK_H
+#define MPC_MATTER_INTERFACES_MOCK_H
 
 class TestSessionProvider : public SessionManagerProvider
 {
@@ -49,5 +51,25 @@ private:
     bool doSuccess;
 };
 
-#endif // MPC_SESSIONPROVIDER_MOCK_H
-/** @} end mpc_sessionprovider_mock */
+class TestChipServer : public ChipServer
+{
+public:
+    TestChipServer(const FabricInfo* fabricInfo) {
+        bkpServerPvdr = chipServerProvider ;
+        chipServerProvider  = this;
+        mFabricInfo = fabricInfo;
+    }
+
+    ~TestChipServer() { chipServerProvider  = bkpServerPvdr; }
+
+    const FabricInfo* FindFabricWithIndex(FabricIndex fabricIndex) {
+        return mFabricInfo;
+    }
+
+private:
+    const FabricInfo* mFabricInfo = nullptr;
+    ChipServer * bkpServerPvdr = nullptr;
+};
+
+#endif // MPC_MATTER_INTERFACES_MOCK_H
+/** @} end mpc_matter_interfaces_mock */

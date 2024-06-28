@@ -14,11 +14,11 @@
 #include "sl_log.h"
 #include "mpc_failing_node.h"
 #include "mpc_attribute_store.h"
+#include "mpc_matter_interfaces.hpp"
 
 #include "app/server/Server.h"
 
 #define LOG_TAG "mpc_command_sender"
-static SessionManagerProvider defaultSessionProvider;
 
 SessionManagerProvider * AttributeReadRequest::caseSessProvider = &defaultSessionProvider;
 SessionManagerProvider * WriteRequest::caseSessProvider = &defaultSessionProvider;

@@ -17,6 +17,7 @@
 #include "mpc_failing_node.h"
 #include "sl_status.h"
 #include <functional>
+#include "mpc_matter_interfaces.hpp"
 
 #ifndef MPC_SENDABLE_COMMAND
 #define MPC_SENDABLE_COMMAND
@@ -75,7 +76,7 @@ public:
         temp_cmd->mCommand         = mCommand;
         temp_cmd->mSendDone        = callback;
         temp_cmd->mScopedId        = node_id;
-        Server::GetInstance().GetCASESessionManager()->FindOrEstablishSession(node_id, &temp_cmd->mOnConnectedCallback,
+        caseSessProvider->FindOrEstablishSession(node_id, &temp_cmd->mOnConnectedCallback,
                                                                               &temp_cmd->mOnConnectionFailureCallback);
     };
 
@@ -126,7 +127,7 @@ private:
                                                     onSuccess, onFailure);
         // Retry immediately in-case of synchronous send failure (possibly internal failure such as stale session)
         if (err != CHIP_NO_ERROR && ctx->mRetryCount++ < MPC_MAX_COMMAND_RETRY) {
-            Server::GetInstance().GetCASESessionManager()->FindOrEstablishSession(sessionHandle->GetPeer(), 
+            caseSessProvider->FindOrEstablishSession(sessionHandle->GetPeer(), 
                                                     &ctx->mOnConnectedCallback, &ctx->mOnConnectionFailureCallback);
         } else if (err != CHIP_NO_ERROR) {
             attribute_store::attribute unid;
@@ -143,7 +144,7 @@ private:
         ChipLogError(NotSpecified, "Connection Failed: %" CHIP_ERROR_FORMAT, error.Format());
         
         if (ctx->mRetryCount++ < MPC_MAX_COMMAND_RETRY) {
-            Server::GetInstance().GetCASESessionManager()->FindOrEstablishSession(peerId, 
+            caseSessProvider->FindOrEstablishSession(peerId, 
                                                     &ctx->mOnConnectedCallback, &ctx->mOnConnectionFailureCallback);
             return;
         }
@@ -168,7 +169,13 @@ private:
     Callback::Callback<OnDeviceConnectionFailure> mOnConnectionFailureCallback;
     Optional<SendDoneCallback> mSendDone;
     ScopedNodeId mScopedId;
+    static SessionManagerProvider * caseSessProvider;
+    friend class TestSessionProvider;
+    friend class chip::app::TestCommandInteraction;
 };
+
+template <typename T>
+SessionManagerProvider * SendableCommand<T>::caseSessProvider = &defaultSessionProvider;
 
 } // namespace mpc
 

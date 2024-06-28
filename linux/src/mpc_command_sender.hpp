@@ -26,6 +26,7 @@
 #include "app/ConcreteAttributePath.h"
 #include "app/InteractionModelEngine.h"
 #include "app/server/Server.h"
+#include "mpc_matter_interfaces.hpp"
 
 #include "sl_status.h"
 
@@ -57,17 +58,6 @@ void on_device_connection_failure_common(void * context, const ScopedNodeId & pe
     handle->invokeFailureCallback(CHIP_ERROR_CONNECTION_CLOSED_UNEXPECTEDLY);
 }
 
-class SessionManagerProvider
-{
-public:
-    virtual ~SessionManagerProvider() = default;
-    virtual void FindOrEstablishSession(ScopedNodeId nodeId, Callback::Callback<OnDeviceConnected> * OnConnectedCallback,
-                                        Callback::Callback<OnDeviceConnectionFailure> * OnConnectionFailureCallback)
-    {
-        Server::GetInstance().GetCASESessionManager()->FindOrEstablishSession(nodeId, OnConnectedCallback,
-                                                                              OnConnectionFailureCallback);
-    }
-};
 /**
  * @brief Class to send ReadAttribute matter command from MPC
  */

@@ -22,6 +22,9 @@
 #include "mpc_attribute_store.h"
 #include "mpc_attribute_store_defined_attribute_types.h"
 #include "mpc_failing_node.h"
+#include "failing_nodes_datastore.h"
+#include "mpc_node_monitor.h"
+#include "mpc_matter_interfaces_mock.h"
 #include "zap-types.h"
 
 // Chip components
@@ -87,6 +90,7 @@ public:
             return FAILURE;
         }
 
+        failingNodeDataStore.initialize();
         return SUCCESS;
     }
 
@@ -120,6 +124,52 @@ static void TestMarkDeviceOffline(nlTestSuite * inSuite, void * aContext)
     NL_TEST_ASSERT(inSuite, (networkStatusNode.reported<NodeStateNetworkStatus>() == ZCL_NODE_STATE_NETWORK_STATUS_OFFLINE));
 }
 
+static void TestFailingNodeRecovery(nlTestSuite * inSuite, void * aContext)
+{
+    TestContext * ctxt = static_cast<TestContext *>(aContext);
+    auto networkStatusNode = ctxt->mDevNode.child_by_type(ATTRIBUTE_PREVIOUS_STATE_NETWORK_STATUS_ID);
+    networkStatusNode.set_reported<NodeStateNetworkStatus>(ZCL_NODE_STATE_NETWORK_STATUS_ONLINE_FUNCTIONAL);
+
+    auto currentNode = ctxt->mDevNode.child_by_type(DOTDOT_ATTRIBUTE_ID_STATE_NETWORK_STATUS);
+    currentNode.set_reported<NodeStateNetworkStatus>(ZCL_NODE_STATE_NETWORK_STATUS_OFFLINE);
+
+    NL_TEST_ASSERT(inSuite, (mpc_failing_node_recovery(ctxt->mDevNode) == SL_STATUS_OK));
+    NL_TEST_ASSERT(inSuite, (currentNode.reported<NodeStateNetworkStatus>() == ZCL_NODE_STATE_NETWORK_STATUS_ONLINE_FUNCTIONAL));
+}
+
+static void TestNodeMonitorInit(nlTestSuite * inSuite, void * aContext)
+{
+    NL_TEST_ASSERT(inSuite, (SL_STATUS_OK == mpc_node_monitor_init()));
+}
+
+static void TestAutoRecovery(nlTestSuite * inSuite, void * aContext)
+{
+    TestContext & ctxt = *static_cast<TestContext *>(aContext);
+
+    TestSessionProvider testSession(ctxt.GetExchangeManager(), ctxt.GetSessionBobToAlice(), false);
+    auto destNodeId     = ctxt.GetAliceFabric()->GetNodeId();
+    auto destFabric     = ctxt.GetAliceFabric()->GetCompressedFabricId();
+    std::string nwkList = std::to_string(destFabric) + ":" + std::to_string(destNodeId);
+    attribute_store_set_child_reported(ctxt.mDevNode, DOTDOT_ATTRIBUTE_ID_STATE_NETWORK_LIST, nwkList.c_str(), nwkList.length());
+
+    mpc_attribute_resolver_helper_set_resolution_listener(ctxt.mDevNode);
+    auto epNode = ctxt.mDevNode.emplace_node<EndpointId>(ATTRIBUTE_ENDPOINT_ID, 0);
+    attribute_store_type_t reportNodeType =
+        ((Clusters::OnOff::Id & 0xFFFF) << 16) | (Clusters::OnOff::Attributes::OnOff::Id && 0xFFFF);
+
+    epNode.emplace_node<bool>(reportNodeType, false);
+    CHIP_ERROR error = CHIP_ERROR_TIMEOUT;
+    auto networkStatusNode = ctxt.mDevNode.child_by_type(DOTDOT_ATTRIBUTE_ID_STATE_NETWORK_STATUS);
+    NL_TEST_ASSERT(inSuite, (check_and_mark_failing_node(ctxt.mDevNode, error) == SL_STATUS_OK));
+    NL_TEST_ASSERT(inSuite, (networkStatusNode.reported<NodeStateNetworkStatus>() == ZCL_NODE_STATE_NETWORK_STATUS_OFFLINE));
+
+    NL_TEST_ASSERT(inSuite, (mpc_failing_node_auto_recovery() == SL_STATUS_OK));
+
+    recover_next_failing_node();
+    ctxt.GetLoopback().mNumMessagesToDrop = 1;
+    ctxt.DrainAndServiceIO();
+}
+
 /**
  *   Test Suite. It lists all the test functions.
  */
@@ -128,6 +178,9 @@ static const nlTest sTests[] =
 {
     NL_TEST_DEF("TestMarkDeviceAsFailing", TestMarkDeviceAsFailing),
     NL_TEST_DEF("TestMarkDeviceOffline", TestMarkDeviceOffline),
+    NL_TEST_DEF("TestFailingNodeRecovery", TestFailingNodeRecovery),
+    NL_TEST_DEF("TestNodeMonitorInit", TestNodeMonitorInit),
+    NL_TEST_DEF("TestAutoRecovery", TestAutoRecovery),
 
     NL_TEST_SENTINEL()
 };

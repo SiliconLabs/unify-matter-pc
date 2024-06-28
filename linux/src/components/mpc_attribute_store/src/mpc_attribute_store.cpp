@@ -24,6 +24,7 @@
 #include "mpc_attribute_store_type_registration.h"
 #include "sl_status.h"
 #include "unify_dotdot_attribute_store.h"
+#include "mpc_matter_interfaces.hpp"
 
 typedef char unid_t[MAXIMUM_UNID_SIZE];
 
@@ -161,7 +162,7 @@ sl_status_t mpc_attribute_store_get_unid_from_matter_peer_nodeid(chip::ScopedNod
 {
     try
     {
-        auto pFabricInfo = chip::Server::GetInstance().GetFabricTable().FindFabricWithIndex(nodeId.GetFabricIndex());
+        auto pFabricInfo = ChipServer::GetChipServer()->FindFabricWithIndex(nodeId.GetFabricIndex());
         auto mpcfabricid = pFabricInfo->GetCompressedFabricId();
         auto networkItem = std::to_string(mpcfabricid);
         networkItem.append(std::string(":"));

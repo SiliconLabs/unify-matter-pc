@@ -25,7 +25,7 @@
 #include "mpc_attribute_resolver.h"
 #include "mpc_attribute_store_defined_attribute_types.h"
 #include "mpc_node_monitor.h"
-#include "mpc_sessionprovider_mock.h"
+#include "mpc_matter_interfaces_mock.h"
 
 #include <filesystem>
 

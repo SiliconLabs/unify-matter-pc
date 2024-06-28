@@ -59,11 +59,9 @@ public:
     void OnError(CHIP_ERROR err) override {
         sl_log_error(LOG_TAG, "Error reading attribute : %s", chip::ErrorStr(err));
         // Check whether node is valid before tring to retrieving fabric info as it might cause SIGSEGV
-        if (chip::Server::GetInstance().GetFabricTable().FindFabricWithIndex(ScopedNodeId(mCtxt->mDest, 1).GetFabricIndex())) {
-            attribute_store::attribute unid;
-            mpc_attribute_store_get_unid_from_matter_peer_nodeid(ScopedNodeId(mCtxt->mDest, 1), unid);
-            check_and_mark_failing_node(unid, err);
-        }
+        attribute_store::attribute unid;
+        mpc_attribute_store_get_unid_from_matter_peer_nodeid(ScopedNodeId(mCtxt->mDest, 1), unid);
+        check_and_mark_failing_node(unid, err);
     }
 
     void OnReportBegin() override { sl_log_error(LOG_TAG, "Report about to start"); }

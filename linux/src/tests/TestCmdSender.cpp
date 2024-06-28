@@ -22,11 +22,15 @@
 // mpc includes
 #include "mpc_cli_mock.h"
 #include "mpc_command_sender.hpp"
-#include "mpc_sessionprovider_mock.h"
+#include "mpc_sendable_command.hpp"
+#include "mpc_matter_interfaces_mock.h"
 
 using namespace unify::mpc::Test;
 using namespace chip;
 using namespace chip::app;
+using namespace mpc;
+
+constexpr EndpointId kTestEndpointId = 1;
 
 class TestContext : public UnifyMPCContext
 {
@@ -289,6 +293,7 @@ static void TestCliSendSubscribeSessionFail(nlTestSuite * inSuite, void * aConte
 {
     TestContext & ctx = *static_cast<TestContext *>(aContext);
     TestSessionProvider testSessPvdr(ctx.GetExchangeManager(), ctx.GetSessionBobToAlice(), true);
+    TestChipServer testChipServer(ctx.GetAliceFabric());
     NodeId aliceNodeId  = ctx.GetAliceFabric()->GetNodeId();
     std::string command = "subscribe 10,60,0,";  // subs minInterval,maxInterval,keepSubs,
     command.append(std::to_string(aliceNodeId)); // nodeId
@@ -304,6 +309,7 @@ class TestWriteInteraction
 public:
     static void TestWriteSender(nlTestSuite * inSuite, void * aContext);
     static void TestWriteSenderFail(nlTestSuite * inSuite, void * aContext);
+    static void TestWriteSenderSessionFail(nlTestSuite * inSuite, void * aContext);
 };
 } // namespace chip::app
 
@@ -404,6 +410,107 @@ void TestWriteInteraction::TestWriteSenderFail(nlTestSuite * inSuite, void * aCo
     ctx.DrainAndServiceIO();
     NL_TEST_ASSERT(inSuite, err_response.IsIMStatus() && app::StatusIB(err_response).mStatus == Protocols::InteractionModel::Status::UnsupportedEndpoint);
 }
+
+void TestWriteInteraction::TestWriteSenderSessionFail(nlTestSuite * inSuite, void * aContext)
+{
+    CHIP_ERROR err                     = CHIP_NO_ERROR;
+    TestContext & ctx = *static_cast<TestContext *>(aContext);
+    TestSessionProvider testSessPvdr(ctx.GetExchangeManager(), ctx.GetSessionBobToAlice(), true);
+    WriteRequest::caseSessProvider = &testSessPvdr;
+    NodeId aliceNodeId  = ctx.GetAliceFabric()->GetNodeId();
+    uint64_t value = 1;
+
+    System::PacketBufferTLVWriter writer;
+    System::PacketBufferHandle payload = System::PacketBufferHandle::New(System::PacketBuffer::kMaxSize);
+    writer.Init(std::move(payload));
+    TLV::TLVType outerType;
+    std::vector<AttributePathParams> paths;
+
+    writer.StartContainer(chip::TLV::AnonymousTag(), TLV::kTLVType_List, outerType);
+    writer.Put(chip::TLV::ContextTag(chip::to_underlying(chip::app::AttributeDataIB::Tag::kData)), value);
+    writer.EndContainer(outerType);
+
+    NL_TEST_ASSERT(inSuite, err == CHIP_NO_ERROR);
+
+    err = writer.Finalize(&payload);
+
+    NL_TEST_ASSERT(inSuite, err == CHIP_NO_ERROR);
+
+    TLV::TLVReader reader;
+
+    reader.Init(payload->Start(), payload->DataLength());
+
+    paths.push_back(AttributePathParams(1, 6, 16387));
+    CHIP_ERROR err_response = CHIP_ERROR_ACCESS_DENIED;
+    auto mockWriteCallbackFunction = [&err_response](CHIP_ERROR error, ScopedNodeId nodeId, AttributePathParams params) {
+        err_response = error;
+    };
+
+    auto request = chip::Platform::New<WriteRequest>(aliceNodeId, paths, mockWriteCallbackFunction);
+    request->mReader = reader;
+    sl_status_t status = request->SendCommand(reader);
+
+    NL_TEST_ASSERT(inSuite, status == SL_STATUS_OK);
+    ctx.DrainAndServiceIO();
+    NL_TEST_ASSERT(inSuite, err_response == CHIP_ERROR_CONNECTION_CLOSED_UNEXPECTEDLY);
+}
+
+namespace chip::app {
+class TestCommandInteraction
+{
+public:
+    static void TestCommandSender(nlTestSuite * inSuite, void * aContext);
+    static void TestCommandSenderSessionFail(nlTestSuite * inSuite, void * aContext);
+};
+} // namespace chip::app
+
+void TestCommandInteraction::TestCommandSender(nlTestSuite * inSuite, void * aContext)
+{
+    TestContext & ctx = *static_cast<TestContext *>(aContext);
+    TestSessionProvider testSessPvdr(ctx.GetExchangeManager(), ctx.GetSessionBobToAlice(), false);
+    TestChipServer testChipServer(ctx.GetAliceFabric());
+
+    SendableCommand<chip::app::Clusters::OnOff::Commands::On::Type> cmd;
+    mpc::SendableCommand<chip::app::Clusters::OnOff::Commands::On::Type>::caseSessProvider = &testSessPvdr;
+
+    bool statusCheck        = false;
+    NodeId aliceNodeId  = ctx.GetAliceFabric()->GetNodeId();
+
+    auto mockCommandSendCallback = [&statusCheck](CHIP_ERROR error, ScopedNodeId nodeId) {
+        statusCheck = true;
+    };
+
+    cmd.Send(chip::ScopedNodeId(aliceNodeId, 1), kTestEndpointId,
+        MakeOptional<SendableCommand<chip::app::Clusters::OnOff::Commands::On::Type>::SendDoneCallback>(mockCommandSendCallback));
+
+    ctx.DrainAndServiceIO();
+
+    NL_TEST_ASSERT(inSuite, statusCheck);
+}
+
+void TestCommandInteraction::TestCommandSenderSessionFail(nlTestSuite * inSuite, void * aContext)
+{
+    TestContext & ctx = *static_cast<TestContext *>(aContext);
+    TestSessionProvider testSessPvdr(ctx.GetExchangeManager(), ctx.GetSessionBobToAlice(), true);
+    TestChipServer testChipServer(ctx.GetAliceFabric());
+
+    SendableCommand<chip::app::Clusters::OnOff::Commands::On::Type> cmd;
+    mpc::SendableCommand<chip::app::Clusters::OnOff::Commands::On::Type>::caseSessProvider = &testSessPvdr;
+
+    NodeId aliceNodeId  = ctx.GetAliceFabric()->GetNodeId();
+    CHIP_ERROR err_response = CHIP_ERROR_ACCESS_DENIED;
+    auto mockCommandSendCallback = [&err_response](CHIP_ERROR error, ScopedNodeId nodeId) {
+        err_response = error;
+    };
+
+    cmd.Send(chip::ScopedNodeId(aliceNodeId, 1), kTestEndpointId,
+        MakeOptional<SendableCommand<chip::app::Clusters::OnOff::Commands::On::Type>::SendDoneCallback>(mockCommandSendCallback));
+
+    ctx.DrainAndServiceIO();
+
+    NL_TEST_ASSERT(inSuite, err_response == CHIP_ERROR_CONNECTION_ABORTED);
+}
+
 /**
  *   Test Suite. It lists all the test functions.
  */
@@ -414,9 +521,12 @@ static const nlTest sTests[] =
     NL_TEST_DEF("TestSubscribeSender", TestReadInteraction::TestSubscribeSender),
     NL_TEST_DEF("TestWriteSender", TestWriteInteraction::TestWriteSender),
     NL_TEST_DEF("TestWriteSenderFail", TestWriteInteraction::TestWriteSenderFail),
+    NL_TEST_DEF("TestWriteSenderSessionFail", TestWriteInteraction::TestWriteSenderSessionFail),
     NL_TEST_DEF("TestCliSendRead", TestCliSendRead),
     NL_TEST_DEF("TestCliSendSubscribe", TestCliSendSubscribe),
     NL_TEST_DEF("TestCliSendSubscribeSessionFail", TestCliSendSubscribeSessionFail),
+    NL_TEST_DEF("TestCommandSender", TestCommandInteraction::TestCommandSender),
+    NL_TEST_DEF("TestCommandSenderSessionFail", TestCommandInteraction::TestCommandSenderSessionFail),
     NL_TEST_SENTINEL()
 };
 
