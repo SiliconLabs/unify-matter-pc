@@ -30,6 +30,16 @@ const FabricInfo* ChipServer::FindFabricWithIndex(FabricIndex fabricIndex)
     return Server::GetInstance().GetFabricTable().FindFabricWithIndex(fabricIndex);
 }
 
+const FabricTable & ChipServer::GetFabricTable()
+{
+    return Server::GetInstance().GetFabricTable();
+}
+
+const FabricInfo*  ChipServer::FindFabricWithCompressedId(CompressedFabricId compressedFabricId)
+{
+    return Server::GetInstance().GetFabricTable().FindFabricWithCompressedId(compressedFabricId);
+}
+
 ChipServer* ChipServer::GetChipServer()
 {
     return chipServerProvider;

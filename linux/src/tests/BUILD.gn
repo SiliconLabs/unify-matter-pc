@@ -52,7 +52,8 @@ chip_test_suite_using_nltest("tests") {
     "TestNodeInterview.cpp",
     "TestNodeMonitor.cpp",
     "TestParserFramework.cpp",
-    "TestFailingNode.cpp"
+    "TestFailingNode.cpp",
+    "TestNodeRemoval.cpp"
   ]
 
   public_deps = [

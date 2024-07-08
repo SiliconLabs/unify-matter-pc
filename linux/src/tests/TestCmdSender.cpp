@@ -293,7 +293,7 @@ static void TestCliSendSubscribeSessionFail(nlTestSuite * inSuite, void * aConte
 {
     TestContext & ctx = *static_cast<TestContext *>(aContext);
     TestSessionProvider testSessPvdr(ctx.GetExchangeManager(), ctx.GetSessionBobToAlice(), true);
-    TestChipServer testChipServer(ctx.GetAliceFabric());
+    TestChipServer testChipServer(&ctx.GetFabricTable());
     NodeId aliceNodeId  = ctx.GetAliceFabric()->GetNodeId();
     std::string command = "subscribe 10,60,0,";  // subs minInterval,maxInterval,keepSubs,
     command.append(std::to_string(aliceNodeId)); // nodeId
@@ -468,7 +468,7 @@ void TestCommandInteraction::TestCommandSender(nlTestSuite * inSuite, void * aCo
 {
     TestContext & ctx = *static_cast<TestContext *>(aContext);
     TestSessionProvider testSessPvdr(ctx.GetExchangeManager(), ctx.GetSessionBobToAlice(), false);
-    TestChipServer testChipServer(ctx.GetAliceFabric());
+    TestChipServer testChipServer(&ctx.GetFabricTable());
 
     SendableCommand<chip::app::Clusters::OnOff::Commands::On::Type> cmd;
     mpc::SendableCommand<chip::app::Clusters::OnOff::Commands::On::Type>::caseSessProvider = &testSessPvdr;
@@ -492,7 +492,7 @@ void TestCommandInteraction::TestCommandSenderSessionFail(nlTestSuite * inSuite,
 {
     TestContext & ctx = *static_cast<TestContext *>(aContext);
     TestSessionProvider testSessPvdr(ctx.GetExchangeManager(), ctx.GetSessionBobToAlice(), true);
-    TestChipServer testChipServer(ctx.GetAliceFabric());
+    TestChipServer testChipServer(&ctx.GetFabricTable());
 
     SendableCommand<chip::app::Clusters::OnOff::Commands::On::Type> cmd;
     mpc::SendableCommand<chip::app::Clusters::OnOff::Commands::On::Type>::caseSessProvider = &testSessPvdr;

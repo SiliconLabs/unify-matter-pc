@@ -54,21 +54,31 @@ private:
 class TestChipServer : public ChipServer
 {
 public:
-    TestChipServer(const FabricInfo* fabricInfo) {
-        bkpServerPvdr = chipServerProvider ;
-        chipServerProvider  = this;
-        mFabricInfo = fabricInfo;
+
+    TestChipServer(const FabricTable * fabricTable) {
+        bkpServerPvdr = chipServerProvider;
+        chipServerProvider = this;
+        mFabricTable = fabricTable;
     }
 
     ~TestChipServer() { chipServerProvider  = bkpServerPvdr; }
 
-    const FabricInfo* FindFabricWithIndex(FabricIndex fabricIndex) {
-        return mFabricInfo;
+    const FabricInfo* FindFabricWithIndex(FabricIndex fabricIndex) override {
+        return mFabricTable->FindFabricWithIndex(fabricIndex);
+    }
+
+    const FabricInfo*  FindFabricWithCompressedId(CompressedFabricId compressedFabricId) override{
+        return mFabricTable->FindFabricWithCompressedId(compressedFabricId);
+    }
+
+    const FabricTable & GetFabricTable() override {
+        return *mFabricTable;
     }
 
 private:
     const FabricInfo* mFabricInfo = nullptr;
     ChipServer * bkpServerPvdr = nullptr;
+    const FabricTable * mFabricTable = nullptr;
 };
 
 #endif // MPC_MATTER_INTERFACES_MOCK_H

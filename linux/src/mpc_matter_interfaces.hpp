@@ -39,6 +39,8 @@ class ChipServer
 public:
     virtual ~ChipServer() = default;
     virtual const FabricInfo* FindFabricWithIndex(FabricIndex fabricIndex);
+    virtual const FabricTable & GetFabricTable();
+    virtual const FabricInfo* FindFabricWithCompressedId(CompressedFabricId compressedFabricId);
 
     static ChipServer* GetChipServer();
 

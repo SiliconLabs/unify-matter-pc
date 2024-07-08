@@ -12,6 +12,7 @@
  *****************************************************************************/
 
 #include "mpc_nw_monitor.h"
+#include "mpc_nw_monitor.hpp"
 #include "attribute.hpp"
 #include "attribute_store.h"
 #include "attribute_store_helper.h"
@@ -24,6 +25,7 @@
 #include "zap-types.h"
 #include <boost/algorithm/string.hpp>
 #include "matter_pc_main.hpp"
+#include "mpc_matter_interfaces.hpp"
 
 #include "process.h"
 #include "clock.h"
@@ -85,195 +87,189 @@ static void generateUNID(string & unid)
     unid.append("mt-" + stream.str());
 }
 
-class OperationalDiscover : public chip::Dnssd::DiscoverNodeDelegate 
+bool OperationalDiscover::needs_update(attribute node)
 {
-    bool needs_update(attribute node)
+    try
     {
-        try
-        {
-            auto state = node.child_by_type(DOTDOT_ATTRIBUTE_ID_STATE_NETWORK_STATUS).reported<NodeStateNetworkStatus>();
-            return ((state != ZCL_NODE_STATE_NETWORK_STATUS_ONLINE_FUNCTIONAL) &&
+        auto state = node.child_by_type(DOTDOT_ATTRIBUTE_ID_STATE_NETWORK_STATUS).reported<NodeStateNetworkStatus>();
+        return ((state != ZCL_NODE_STATE_NETWORK_STATUS_ONLINE_FUNCTIONAL) &&
                     (state != ZCL_NODE_STATE_NETWORK_STATUS_ONLINE_NON_FUNCTIONAL));
-        } catch (std::invalid_argument const & ex)
-        {
-            return false;
-        }
-    }
-
-    void mpc_queue_node_for_interview(attribute node)
+    } catch (std::invalid_argument const & ex)
     {
-        clock_time_t interviewDelay = clock_time() + INTERVIEW_DELAY_MSEC;
+        return false;
+    }
+}
+
+void OperationalDiscover::mpc_queue_node_for_interview(attribute node)
+{
+    clock_time_t interviewDelay = clock_time() + INTERVIEW_DELAY_MSEC;
         
-        struct interviewable_node nodeEntry;
-        nodeEntry.node = node;
-        nodeEntry.interviewAfter = interviewDelay;
-        pending_interviews.push_back(nodeEntry);
+    struct interviewable_node nodeEntry;
+    nodeEntry.node = node;
+    nodeEntry.interviewAfter = interviewDelay;
+    pending_interviews.push_back(nodeEntry);
 
-        // if there list has only the entry we just added or if timer is no longer running, post event to start timer
-        if (pending_interviews.size() == 1 || etimer_expired(&interview_trigger_timer))
-        {
-            process_post(&mpc_nw_mon_process, MPC_INTERVIEW_TIMER_SET_EVENT, (void *)INTERVIEW_DELAY_MSEC);
-        }
-    }
-    void mpc_node_removal_handle(attribute unid)
+    // if there list has only the entry we just added or if timer is no longer running, post event to start timer
+    if (pending_interviews.size() == 1 || etimer_expired(&interview_trigger_timer))
     {
-        NodeStateNetworkStatus state = unid.child_by_type(DOTDOT_ATTRIBUTE_ID_STATE_NETWORK_STATUS).reported<NodeStateNetworkStatus>();
-
-        // Search for the node in pending_interviews list
-        auto nodeEntryToDelete = std::find_if(pending_interviews.begin(), pending_interviews.end(), [&unid](const interviewable_node &n) {
-            return n.node == unid;
-        });
-        // proceed to delete the node entry from the queue
-        if (nodeEntryToDelete != pending_interviews.end())
-        {
-            if (nodeEntryToDelete == pending_interviews.begin() && (nodeEntryToDelete + 1) != pending_interviews.end())
-            {
-                clock_time_t nextTrigger = 0;
-                if (clock_time() < (nodeEntryToDelete + 1)->interviewAfter)
-                {
-                    nextTrigger = (nodeEntryToDelete + 1)->interviewAfter - clock_time();
-                }
-                process_post(&mpc_nw_mon_process, MPC_INTERVIEW_TIMER_SET_EVENT, (void *)nextTrigger);
-            }
-            // Erase the node entry from the vector
-            pending_interviews.erase(nodeEntryToDelete);
-
-            if (state != ZCL_NODE_STATE_NETWORK_STATUS_ONLINE_INTERVIEWING)
-            {
-                // Returning since the interview is not started and no further actions are required
-                return;
-            }
-        }
-
-        attribute node= unid.child_by_type(DOTDOT_ATTRIBUTE_ID_STATE_NETWORK_LIST);
-        auto node_nw_list_str = node.reported<string>();
-        if (!node_nw_list_str.empty() && node_nw_list_str.find(":") != std::string::npos)
-        {
-            std::string nodeIdStr = node_nw_list_str.erase(0, node_nw_list_str.find(":") + 1);
-            sl_log_debug(LOG_TAG, "Node ID: %s [%llu]", nodeIdStr.c_str(), stoull(nodeIdStr));               
-
-            if (state != ZCL_NODE_STATE_NETWORK_STATUS_ONLINE_INTERVIEWING)
-            {
-                NodeId nodeId = stoull(nodeIdStr);
-                // TODO: Multifabtric support requires extracting index from networklist
-                chip::app::InteractionModelEngine::GetInstance()->ShutdownSubscriptions(1, nodeId);
-            }
-            unid.delete_node();
-        }
-        else
-        {
-            sl_log_debug(LOG_TAG,"node_nw_list_str is empty");
-        }
+        process_post(&mpc_nw_mon_process, MPC_INTERVIEW_TIMER_SET_EVENT, (void *)INTERVIEW_DELAY_MSEC);
     }
-    
-    void OnNodeDiscovered(const chip::Dnssd::DiscoveredNodeData & discoveredNodeData) override
+}
+
+void OperationalDiscover::mpc_node_removal_handle(attribute unid)
+{
+    NodeStateNetworkStatus state = unid.child_by_type(DOTDOT_ATTRIBUTE_ID_STATE_NETWORK_STATUS).reported<NodeStateNetworkStatus>();
+
+    // Search for the node in pending_interviews list
+    auto nodeEntryToDelete = std::find_if(pending_interviews.begin(), pending_interviews.end(), [&unid](const interviewable_node &n) {
+        return n.node == unid;
+    });
+    // proceed to delete the node entry from the queue
+    if (nodeEntryToDelete != pending_interviews.end())
     {
-        
-        if (!discoveredNodeData.Is<chip::Dnssd::OperationalNodeBrowseData>()) {
-            // not Operational Node Browse Data
+        if (nodeEntryToDelete == pending_interviews.begin() && (nodeEntryToDelete + 1) != pending_interviews.end())
+        {
+            clock_time_t nextTrigger = 0;
+            if (clock_time() < (nodeEntryToDelete + 1)->interviewAfter)
+            {
+                nextTrigger = (nodeEntryToDelete + 1)->interviewAfter - clock_time();
+            }
+            process_post(&mpc_nw_mon_process, MPC_INTERVIEW_TIMER_SET_EVENT, (void *)nextTrigger);
+        }
+        // Erase the node entry from the vector
+        pending_interviews.erase(nodeEntryToDelete);
+
+        if (state != ZCL_NODE_STATE_NETWORK_STATUS_ONLINE_INTERVIEWING)
+        {
+            // Returning since the interview is not started and no further actions are required
             return;
         }
-        
-        auto & operationalData  = discoveredNodeData.Get<chip::Dnssd::OperationalNodeBrowseData>();
-        
-        sl_log_debug(LOG_TAG, "Found matter node with node ID " ChipLogFormatX64 ":" ChipLogFormatX64, 
-                            ChipLogValueX64(operationalData.peerId.GetCompressedFabricId()),
-                            ChipLogValueX64(operationalData.peerId.GetNodeId()));
-        if (chip::Server::GetInstance().GetFabricTable().FindFabricWithCompressedId(
-                                                        operationalData.peerId.GetCompressedFabricId()))
-        {
-            // prepare networkList entry
-            auto networkListEntry = to_string(operationalData.peerId.GetCompressedFabricId());
-            networkListEntry.append(":");
-            networkListEntry.append(to_string(operationalData.peerId.GetNodeId()));
-            attribute node;
+    }
 
-            try
+    attribute node= unid.child_by_type(DOTDOT_ATTRIBUTE_ID_STATE_NETWORK_LIST);
+    auto node_nw_list_str = node.reported<string>();
+    if (!node_nw_list_str.empty() && node_nw_list_str.find(":") != std::string::npos)
+    {
+        std::string nodeIdStr = node_nw_list_str.erase(0, node_nw_list_str.find(":") + 1);
+        sl_log_debug(LOG_TAG, "Node ID: %s [%llu]", nodeIdStr.c_str(), stoull(nodeIdStr));               
+
+        if (state != ZCL_NODE_STATE_NETWORK_STATUS_ONLINE_INTERVIEWING)
+        {
+            NodeId nodeId = stoull(nodeIdStr);
+            // TODO: Multifabtric support requires extracting index from networklist
+            chip::app::InteractionModelEngine::GetInstance()->ShutdownSubscriptions(1, nodeId);
+        }
+        unid.delete_node();
+    }
+    else
+    {
+        sl_log_debug(LOG_TAG,"node_nw_list_str is empty");
+    }
+}
+    
+void OperationalDiscover::OnNodeDiscovered(const chip::Dnssd::DiscoveredNodeData & discoveredNodeData)
+{
+        
+    if (!discoveredNodeData.Is<chip::Dnssd::OperationalNodeBrowseData>()) {
+        // not Operational Node Browse Data
+        return;
+    }
+        
+    auto & operationalData  = discoveredNodeData.Get<chip::Dnssd::OperationalNodeBrowseData>();
+        
+    sl_log_debug(LOG_TAG, "Found matter node with node ID " ChipLogFormatX64 ":" ChipLogFormatX64, 
+                        ChipLogValueX64(operationalData.peerId.GetCompressedFabricId()),
+                        ChipLogValueX64(operationalData.peerId.GetNodeId()));
+    if (ChipServer::GetChipServer()->FindFabricWithCompressedId(operationalData.peerId.GetCompressedFabricId()))
+    {
+        // prepare networkList entry
+        auto networkListEntry = to_string(operationalData.peerId.GetCompressedFabricId());
+        networkListEntry.append(":");
+        networkListEntry.append(to_string(operationalData.peerId.GetNodeId()));
+        attribute node;
+
+        try
+        {
+            // If networkList entry already exists in one of the node, we need to skip processing
+            for (auto unids : attribute::root().children(ATTRIBUTE_NODE_ID))
             {
-                // If networkList entry already exists in one of the node, we need to skip processing
-                for (auto unids : attribute::root().children(ATTRIBUTE_NODE_ID))
+                node = unids.child_by_type(DOTDOT_ATTRIBUTE_ID_STATE_NETWORK_LIST);
+                if (!node.is_valid()) 
                 {
-                    node = unids.child_by_type(DOTDOT_ATTRIBUTE_ID_STATE_NETWORK_LIST);
-                    if (!node.is_valid()) 
-                    {
-                        // ideally not a possible case but skip if networklist doesn't exist
-                        sl_log_debug(LOG_TAG, "Skipped node [%x] due to absence of networkList attribute", node);
-                        continue;
-                    }
-                    auto node_nw_list_str = node.reported<string>();
-                    std::vector<std::string> node_nw_list;
-                    size_t findIndex = 0;
-                    boost::algorithm::split(node_nw_list, node_nw_list_str.c_str(), boost::is_any_of(","));
-                    for (findIndex = 0; (node_nw_list[findIndex] != networkListEntry) 
-                                            && (findIndex < node_nw_list.size()); findIndex++);
-                    if (findIndex != node_nw_list.size())
-                    {
-                        sl_log_debug(LOG_TAG, "entry already exists in networkList of %s", unids.reported<string>().c_str());
-                        break;
-                    }
-                    node = attribute(ATTRIBUTE_STORE_INVALID_NODE);
+                    // ideally not a possible case but skip if networklist doesn't exist
+                    sl_log_debug(LOG_TAG, "Skipped node [%x] due to absence of networkList attribute", node);
+                    continue;
                 }
-                if(operationalData.hasZeroTTL)
+                auto node_nw_list_str = node.reported<string>();
+                std::vector<std::string> node_nw_list;
+                size_t findIndex = 0;
+                boost::algorithm::split(node_nw_list, node_nw_list_str.c_str(), boost::is_any_of(","));
+                for (findIndex = 0; (node_nw_list[findIndex] != networkListEntry) 
+                                        && (findIndex < node_nw_list.size()); findIndex++);
+                if (findIndex != node_nw_list.size())
                 {
-                    if (node.is_valid())
-                    {
-                        attribute unid = node.parent();
-                        sl_log_debug(LOG_TAG, "Removing node %s",unid.reported<string>().c_str());
-                        mpc_node_removal_handle(unid);
-                    }
+                    sl_log_debug(LOG_TAG, "entry already exists in networkList of %s", unids.reported<string>().c_str());
+                    break;
+                }
+                node = attribute(ATTRIBUTE_STORE_INVALID_NODE);
+            }
+            if(operationalData.hasZeroTTL)
+            {
+                if (node.is_valid())
+                {
+                    attribute unid = node.parent();
+                    sl_log_debug(LOG_TAG, "Removing node %s",unid.reported<string>().c_str());
+                    mpc_node_removal_handle(unid);
+                }
+                return;
+            }
+
+            if (node.is_valid())
+            {
+                if (!needs_update(node))
+                {
+                    sl_log_debug(LOG_TAG, "skipping addition of node %u since it already exists in attribute tree",
+                                    operationalData.peerId.GetNodeId());
                     return;
                 }
-
-                if (node.is_valid())
-                {
-                    if (!needs_update(node))
-                    {
-                        sl_log_debug(LOG_TAG, "skipping addition of node %u since it already exists in attribute tree",
-                                     operationalData.peerId.GetNodeId());
-                        return;
-                    }
-                }
-                else
-                {
-                    sl_log_debug(LOG_TAG, "Found matter node with node ID " ChipLogFormatX64, ChipLogValueX64(operationalData.peerId.GetNodeId()));
-                    string unid;
-                    generateUNID(unid);
-                    node = attribute::root().add_node(ATTRIBUTE_NODE_ID);
-                    attribute_store_set_reported_string(node, unid.c_str());
-                }
-                auto state = ZCL_NODE_STATE_NETWORK_STATUS_ONLINE_INTERVIEWING;
-                // MPC itself doesn't need to be interviewed, directly move to Online Functional
-                if (chip::Server::GetInstance()
-                        .GetFabricTable()
-                        .FindFabricWithCompressedId(operationalData.peerId.GetCompressedFabricId())
-                        ->GetNodeId() == operationalData.peerId.GetNodeId())
-                {
-                    sl_log_info(LOG_TAG, "MPC moved to Online Functional");
-                    auto ep = node.emplace_node<EndpointId>(ATTRIBUTE_ENDPOINT_ID, 0);
-                    ep.emplace_node<NodeStateSecurity>(DOTDOT_ATTRIBUTE_ID_STATE_SECURITY, ZCL_NODE_STATE_SECURITY_MATTER);
-                    ep.emplace_node<uint32_t>(DOTDOT_ATTRIBUTE_ID_STATE_MAXIMUM_COMMAND_DELAY, 1);
-                    state = ZCL_NODE_STATE_NETWORK_STATUS_ONLINE_FUNCTIONAL;
-                }
-                else
-                {
-                    mpc_queue_node_for_interview(node);
-                }
-                sl_log_debug(LOG_TAG, "networkList formed [%s] -> <%s>", node.reported<string>().c_str(), networkListEntry.c_str());
-                attribute_store_set_reported_string(node.emplace_node(DOTDOT_ATTRIBUTE_ID_STATE_NETWORK_LIST), networkListEntry.c_str());
-                node.emplace_node<NodeStateNetworkStatus>(DOTDOT_ATTRIBUTE_ID_STATE_NETWORK_STATUS, state);
-
-            } catch (...)
-            {
-                if (node.is_valid())
-                    node.delete_node();
-                std::exception_ptr p = std::current_exception();
-                sl_log_error(LOG_TAG, "Failed to add discovered node [%s]", (p ? p.__cxa_exception_type()->name() : "null"));
             }
-        }
-        mpc_schedule_contiki();
-    }
-};
+            else
+            {
+                sl_log_debug(LOG_TAG, "Found matter node with node ID " ChipLogFormatX64, ChipLogValueX64(operationalData.peerId.GetNodeId()));
+                string unid;
+                generateUNID(unid);
+                node = attribute::root().add_node(ATTRIBUTE_NODE_ID);
+                attribute_store_set_reported_string(node, unid.c_str());
+            }
+            auto state = ZCL_NODE_STATE_NETWORK_STATUS_ONLINE_INTERVIEWING;
+            // MPC itself doesn't need to be interviewed, directly move to Online Functional
+            if (ChipServer::GetChipServer()->FindFabricWithCompressedId(operationalData.peerId.GetCompressedFabricId())
+                    ->GetNodeId() == operationalData.peerId.GetNodeId())
+            {
+                sl_log_info(LOG_TAG, "MPC moved to Online Functional");
+                auto ep = node.emplace_node<EndpointId>(ATTRIBUTE_ENDPOINT_ID, 0);
+                ep.emplace_node<NodeStateSecurity>(DOTDOT_ATTRIBUTE_ID_STATE_SECURITY, ZCL_NODE_STATE_SECURITY_MATTER);
+                ep.emplace_node<uint32_t>(DOTDOT_ATTRIBUTE_ID_STATE_MAXIMUM_COMMAND_DELAY, 1);
+                state = ZCL_NODE_STATE_NETWORK_STATUS_ONLINE_FUNCTIONAL;
+            }
+            else
+            {
+                mpc_queue_node_for_interview(node);
+            }
+            sl_log_debug(LOG_TAG, "networkList formed [%s] -> <%s>", node.reported<string>().c_str(), networkListEntry.c_str());
+            attribute_store_set_reported_string(node.emplace_node(DOTDOT_ATTRIBUTE_ID_STATE_NETWORK_LIST), networkListEntry.c_str());
+            node.emplace_node<NodeStateNetworkStatus>(DOTDOT_ATTRIBUTE_ID_STATE_NETWORK_STATUS, state);
 
+        } catch (...)
+        {
+            if (node.is_valid())
+                node.delete_node();
+            std::exception_ptr p = std::current_exception();
+            sl_log_error(LOG_TAG, "Failed to add discovered node [%s]", (p ? p.__cxa_exception_type()->name() : "null"));
+        }
+    }
+    mpc_schedule_contiki();
+}
 
 static void mpc_on_ep_change_cb(attribute_store_node_t node, attribute_store_change_t change)
 {
@@ -337,7 +333,7 @@ static void mpc_start_node_discovery()
     }
 }
 
-static void find_mpc_and_update_networklist(FabricIndex removeIndex)
+void find_mpc_and_update_networklist(FabricIndex removeIndex)
 {
     attribute mpcNode;
     string networkList;
@@ -354,8 +350,8 @@ static void find_mpc_and_update_networklist(FabricIndex removeIndex)
     }
 
     // loop logic here is applicable when multi-fabric is to be supported
-    auto fabric = Server::GetInstance().GetFabricTable().cbegin();
-    for (; fabric != Server::GetInstance().GetFabricTable().cend(); fabric++)
+    auto fabric = ChipServer::GetChipServer()->GetFabricTable().cbegin();
+    for (; fabric != ChipServer::GetChipServer()->GetFabricTable().cend(); fabric++)
     {
         // prepare networkList entry
         auto networkListItem = to_string(fabric->GetCompressedFabricId());
@@ -447,45 +443,44 @@ static sl_status_t mpc_populate_attribute_store()
     }
 }
 
-class MPCFabricDelegate : public FabricTable::Delegate
+void MPCFabricDelegate::OnFabricUpdated(const FabricTable & fabricTable, FabricIndex fabricIndex)
 {
-    void OnFabricUpdated(const FabricTable & fabricTable, FabricIndex fabricIndex) override
-    {
-        sl_log_info(LOG_TAG, "fabric with ID %x added at index %u",
-                    fabricTable.FindFabricWithIndex(fabricIndex)->GetCompressedFabricId(), fabricIndex);
-        find_mpc_and_update_networklist(kUndefinedFabricIndex);
-    }
-    void OnFabricRemoved(const FabricTable & fabricTable, FabricIndex fabricIndex) override
-    {
-        sl_log_info(LOG_TAG, "fabric count for MPC [%u]", fabricTable.FabricCount());
+    sl_log_info(LOG_TAG, "fabric with ID %x added at index %u",
+            fabricTable.FindFabricWithIndex(fabricIndex)->GetCompressedFabricId(), fabricIndex);
+    find_mpc_and_update_networklist(kUndefinedFabricIndex);
+}
+
+void MPCFabricDelegate::OnFabricRemoved(const FabricTable & fabricTable, FabricIndex fabricIndex)
+{
+    sl_log_info(LOG_TAG, "fabric count for MPC [%u]", fabricTable.FabricCount());
         
-    }
-    void FabricWillBeRemoved(const FabricTable & fabricTable, FabricIndex fabricIndex) override
+}
+    
+void MPCFabricDelegate::FabricWillBeRemoved(const FabricTable & fabricTable, FabricIndex fabricIndex)
+{
+    find_mpc_and_update_networklist(fabricIndex);
+
+    for (auto unids : attribute::root().children(ATTRIBUTE_NODE_ID)) 
     {
-        sl_log_info(LOG_TAG, "MPC uncommissioned");
-        find_mpc_and_update_networklist(fabricIndex);
-        for (auto unids : attribute::root().children(ATTRIBUTE_NODE_ID)) 
+        auto nwListAttribute = unids.child_by_type(DOTDOT_ATTRIBUTE_ID_STATE_NETWORK_LIST);       
+        if (nwListAttribute.reported_exists()) 
         {
-            auto nwListAttribute = unids.child_by_type(DOTDOT_ATTRIBUTE_ID_STATE_NETWORK_LIST);       
-            if (nwListAttribute.is_valid()) 
+            std::string nwList = nwListAttribute.reported<std::string>();           
+            if (!nwList.empty() && nwList.find(":") != std::string::npos) 
             {
-                std::string nwList = nwListAttribute.reported<std::string>();           
-                if (!nwList.empty() && nwList.find(":") != std::string::npos) 
+                sl_log_debug(LOG_TAG, "Node nwlist: %s", nwList.c_str());
+                std::string nodeIdStr = nwList.erase(0, nwList.find(":") + 1);
+                sl_log_debug(LOG_TAG, "Node ID: %s [%llu]", nodeIdStr.c_str(), stoull(nodeIdStr));               
+                NodeId nodeId = stoull(nodeIdStr);
+                if (unids.is_valid()) 
                 {
-                    sl_log_debug(LOG_TAG, "Node nwlist: %s", nwList.c_str());
-                    std::string nodeIdStr = nwList.erase(0, nwList.find(":") + 1);
-                    sl_log_debug(LOG_TAG, "Node ID: %s [%llu]", nodeIdStr.c_str(), stoull(nodeIdStr));               
-                    NodeId nodeId = stoull(nodeIdStr);
-                    if (unids.is_valid()) 
-                    {
-                        chip::app::InteractionModelEngine::GetInstance()->ShutdownSubscriptions(fabricIndex, nodeId);
-                        unids.delete_node();
-                    }
+                    chip::app::InteractionModelEngine::GetInstance()->ShutdownSubscriptions(fabricIndex, nodeId);
+                    unids.delete_node();
                 }
             }
         }
     }
-};
+}
 
 sl_status_t mpc_nw_monitor_init()
 {
