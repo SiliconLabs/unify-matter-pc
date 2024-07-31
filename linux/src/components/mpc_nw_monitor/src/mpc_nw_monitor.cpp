@@ -215,12 +215,24 @@ void OperationalDiscover::OnNodeDiscovered(const chip::Dnssd::DiscoveredNodeData
             }
             if(operationalData.hasZeroTTL)
             {
-                if (node.is_valid())
+                if (!node.is_valid())
                 {
-                    attribute unid = node.parent();
-                    sl_log_debug(LOG_TAG, "Removing node %s",unid.reported<string>().c_str());
-                    mpc_node_removal_handle(unid);
+                    return;
                 }
+                attribute unid = node.parent();
+                try
+                {
+                    auto state = unid.child_by_type(DOTDOT_ATTRIBUTE_ID_STATE_NETWORK_STATUS).reported<NodeStateNetworkStatus>();
+                    if (state == ZCL_NODE_STATE_NETWORK_STATUS_OFFLINE)
+                    {
+                        return;
+                    }
+                } catch (std::invalid_argument const & ex)
+                {
+                    sl_log_warning(LOG_TAG, "Removing node %s without state check",unid.reported<string>().c_str());
+                }
+                sl_log_debug(LOG_TAG, "Removing node %s",unid.reported<string>().c_str());
+                mpc_node_removal_handle(unid);
                 return;
             }
 

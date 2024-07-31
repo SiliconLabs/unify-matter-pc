@@ -167,6 +167,56 @@ static void TestNodeRemovalMPCEndNodeDelete(nlTestSuite * inSuite, void * aConte
     fabricTable.Delete(fabricIndex);
 }
 
+static void TestFailedNodeRemoval(nlTestSuite * inSuite, void * aContext)
+{
+    TestContext * ctxt = static_cast<TestContext *>(aContext);
+    MPCFabricDelegate delegate;
+    FabricTable fabricTable;
+    FabricIndex fabricIndex;
+
+    TestFabricTableInitialize(fabricTable,fabricIndex);
+    TestChipServer testChipServer(&fabricTable);
+    auto pFabricInfo = ChipServer::GetChipServer()->FindFabricWithIndex(fabricIndex);
+    ctxt->mEndNode =  attribute::root().add_node(ATTRIBUTE_NODE_ID);
+    attribute_store_set_reported_string(ctxt->mEndNode, "mt-02");
+    auto endNode_state = ctxt->mEndNode.emplace_node(DOTDOT_ATTRIBUTE_ID_STATE_NETWORK_STATUS);
+    endNode_state.set_reported<NodeStateNetworkStatus>(ZCL_NODE_STATE_NETWORK_STATUS_OFFLINE);
+
+    auto mpcfabricid = pFabricInfo->GetCompressedFabricId();
+    auto networkItem = std::to_string(mpcfabricid);
+    networkItem.append(std::string(":"));
+    networkItem.append(std::to_string(2));
+    ctxt->mEndNode.emplace_node<std::string>(DOTDOT_ATTRIBUTE_ID_STATE_NETWORK_LIST,networkItem);
+
+    // setup for ep0
+    ctxt->epNode = ctxt->mEndNode.add_node(ATTRIBUTE_ENDPOINT_ID).set_reported<EndpointId>(0);
+    ctxt->epNode.emplace_node<string>(ATTRIBUTE_SERVERLIST_ID, "29,31,40,42");
+    ctxt->epNode.emplace_node<string>(ATTRIBUTE_PARTSLIST_ID, "1");
+
+    // setup mode ep1
+    auto appEpNode = ctxt->mEndNode.emplace_node(ATTRIBUTE_ENDPOINT_ID, 1);
+
+    // setup ep1 with onoff and its manditory attributes defined
+    appEpNode.emplace_node<string>(ATTRIBUTE_SERVERLIST_ID, "6");
+    appEpNode.emplace_node<string>(ONOFF_ATTRIBUTE_LIST, "0");
+    appEpNode.emplace_node<bool>(DOTDOT_ATTRIBUTE_ID_ON_OFF_ON_OFF, false);
+    
+    OperationalDiscover discoverInstance;
+    PeerId peerId(pFabricInfo->GetCompressedFabricId(), 2);
+
+    chip::Dnssd::OperationalNodeBrowseData operationalNodeBrowseData;
+    operationalNodeBrowseData.peerId = peerId;
+    operationalNodeBrowseData.hasZeroTTL = true;
+
+    chip::Dnssd::DiscoveredNodeData discoveredNodeData;
+    discoveredNodeData.Set<chip::Dnssd::OperationalNodeBrowseData>(operationalNodeBrowseData);
+
+    discoverInstance.OnNodeDiscovered(discoveredNodeData);
+    NL_TEST_ASSERT(inSuite, ctxt->mEndNode.is_valid());
+    ctxt->mEndNode.delete_node();
+    fabricTable.Delete(fabricIndex);
+}
+
 // Test case for scenario 1, Removing end node with FabricWillBeRemoved
 static void TestNodeFabricWillBeRemovedEndNodeRemoved(nlTestSuite * inSuite, void * aContext)
 {
@@ -326,6 +376,7 @@ static void TestNodeFabricWillBeRemoved(nlTestSuite * inSuite, void * aContext)
 static const nlTest sTests[] =
 {
     NL_TEST_DEF("TestNodeRemovalMPCEndNodeDelete", TestNodeRemovalMPCEndNodeDelete),
+    NL_TEST_DEF("TestFailedNodeRemoval", TestFailedNodeRemoval),
     NL_TEST_DEF("TestNodeFindMpcAndUpdateNetworkList",TestNodeFindMpcAndUpdateNetworkList),
     NL_TEST_DEF("TestNodeFabricWillBeRemovedEndNodeRemoved", TestNodeFabricWillBeRemovedEndNodeRemoved),
     NL_TEST_DEF("TestNodeFindPendingInterviewNodeDelete",TestNodeFindPendingInterviewNodeDelete),
