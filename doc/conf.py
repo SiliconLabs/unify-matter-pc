@@ -6,11 +6,11 @@
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
-project = 'Unify Matter Pc'
+project = 'Unify Matter PC'
 copyright = 'Copyright © 2024 Silicon Laboratories. All rights reserved.'
 author = 'Silicon Labs'
-release = '1.1.0'
-version = '1.1.0'
+release = '0.1.2'
+version = '0.1.2'
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration

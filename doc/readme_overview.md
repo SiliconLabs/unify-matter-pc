@@ -53,7 +53,7 @@ for details on feature additions, bug fixes, and known issues.
 
 ## Unify MPC Detection and Handling of Failing Nodes
 
-An endnode on Matter Protocol Controller is considered as failing node if any of the following scenarios are observed:
+An end node on Matter Protocol Controller is considered as failing node if any of the following scenarios are observed:
 - Message transmission failure
 - Failed to receive an acknowledgement
 - Periodic attribute reporting failure
@@ -73,7 +73,7 @@ When a command fails to receive acknowledgement from a node, the node is marked 
 A device has certain attributes that need to be reported. We set up periodic reporting for these attributes, and they're sent at regular intervals. The 
 longest interval between reports is MaxIntervalCeiling which can be adjusted in a configuration, it is defaulting to 60 minutes. 
 These regular updates aren't just for syncing attribute data between the device and our system but it also acts as heartbeat for connection. If we haven't 
-received an update within the MaxIntervalCeiling timeframe, we try to reconnect to the device to confirm  it's still available. If we can't reconnect, we mark it as failing.
+received an update within the MaxIntervalCeiling time frame, we try to reconnect to the device to confirm  it's still available. If we can't reconnect, we mark it as failing.
 
 ## Unify MPC Recovery Of Failing/Offline Nodes:
 
@@ -94,7 +94,13 @@ Moreover, these criteria settings are configurable to adapt to varying network c
 ### Message based Recovery
 
 In case of message transmission failure, the failing status will be removed once a command is successfully sent to the node. Upon removal of the failing status, the state is updated to the last known state. 
-Incase of acknowldegment failure, the failing status will be removed if node recevices any incoming message from the node. Upon removal of the failing status, the state is updated to the last known state.
+Incase of acknowledgement failure, the failing status will be removed if node receives any incoming message from the node. Upon removal of the failing status, the state is updated to the last known state.
+
+## Unify MPC Detection and Handling of Decommission
+
+The MPC being matter controller only, does not have any direct knowledge when matter commissioner decommissions any device on the fabric. However, MPC continuously listens to mDNS advertisements from other nodes to detect the commissioning (non-zero ttl in mDNS records) and decommissioning (zero ttl in mDNS records).
+
+When MPC detects a node is decommissioned, it immediately unsubscribes on any active subscriptions and deletes the corresponding entries for that device in its attribute store. This clearing from attribute store in-turn un-retains all the topics under the nodes UNID indicating to IoT services that the node has been removed from network. In the case where MPC itself gets decommissioned, MPC resets itself by clearing entries for all devices it is monitoring/controlling in the fabric and then removes the fabric info from _NetworkList_ attribute of Unify State and updates its state back to _Online Non-functional_.
 
 ## Supported Clusters/Devices
 

@@ -40,7 +40,7 @@ If you want to be able to use Zap to generate code from Unify XML files you need
 to export UCL_XML_PATH as well.
 
 ```bash
-root@docker:/uic$ export UCL_XML_PATH=/uic/stage/share/uic/ucl
+root@docker:/uic$ export UCL_XML_PATH=/uic/components/uic_dotdot/dotdot-xml
 ```
 
 ## Activate Matter development environment
@@ -56,17 +56,35 @@ root@docker:/unify-matter-pc/linux/third_party/connectedhomeip$ git config --glo
 root@docker:/unify-matter-pc/linux/third_party/connectedhomeip$ source ./scripts/activate.sh
 ```
 
-## Compile the Unify Matter Protocol Controller
+## Generate Zap Code
 
-Make sure you are in `/unify-matter-pc/linux/third_party/connectedhomeip` directory
+This step is optional for normal build, only to be done for changes in Zap files.
+
+To use Zap to generate code from Unify XML files you need to export UCL_XML_PATH as well.
 
 ```bash
-root@docker:/unify-matter-pc$ cd /unify-matter-bridge/linux
+root@docker:/unify-matter-pc$ cd /uic
+root@docker:/uic$ export UCL_XML_PATH=/uic/components/uic_dotdot/dotdot-xml
+```
+
+Run below Zap script to generate zap files for unify matter pc.
+
+```bash
+root@docker:/unify-matter-pc$ cd /unify-matter-pc/linux/templates
+root@docker:/unify-matter-pc/linux/templates$ ./run_all_zap.sh
+```
+
+## Compile the Unify Matter Protocol Controller
+
+Make sure you are in `/unify-matter-pc/linux/` directory
+
+```bash
+root@docker:/unify-matter-pc$ cd /unify-matter-pc/linux
 root@docker:/unify-matter-pc/linux$ gn gen out/arm64 --args='target_cpu="arm64"'
 root@docker:/unify-matter-pc/linux$ ninja -C out/arm64 debian
 ```
 
-> 🔴 After building, the `unify-matter-pc` binary is located at `/unify-matter-pc/linux/out/arm64/obj/bin/unify-matter-pc`.
+> 🔴 After building, the `unify-matter-pc` binary is located at `/unify-matter-pc/linux/out/arm64/obj/bin/unify-matter-pc` and the debian package is located at `/unify-matter-pc/linux/out/arm64/packages/`.
 
 ## Compile the chip-tool
 
@@ -81,12 +99,6 @@ root@docker:/unify-matter-pc/linux/third_party/connectedhomeip/examples/chip-too
 ```
 
 > 🔴 After building, the chip-tool binary is located at `/unify-matter-pc/linux/third_party/connectedhomeip/examples/chip-tool/out/arm64/chip-tool`.
-
-## Unit Testing
-
-Unit testing is always a good idea for quality software. Documentation on
-writing unit tests for the Matter Unify Protocol Controller is in the
-[README.md](https://github.com/SiliconLabs/matter/blob/latest/silabs_examples/unify-matter-pc/linux/src/tests/README.md) in the `linux/src/tests` folder.
 
 ## Troubleshooting
 
