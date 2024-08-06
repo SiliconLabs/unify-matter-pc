@@ -31,7 +31,7 @@ Once the base Unify system is up and running, the Unify Matter PC may be
 installed on the Raspberry Pi 4.
 
 The
-[Silicon Labs Matter GitHub release](https://github.com/SiliconLabs/matter/releases)
+[Silicon Labs Matter PC release](https://github.com/SiliconLabs/unify-matter-pc/releases)
 contains ready-to-use binaries of the chip-tool and package of the Unify Matter PC.
 
 > Note that the Unify Host SDK uses Raspberry Pi OS as the base system as
@@ -48,7 +48,7 @@ The Unify data model is largely based on the same data model as Matter, making
 the job of the Unify Matter PC relatively simple. There is almost a 1-1
 relationship between them.
 
-See the [GitHub release notes](https://github.com/SiliconLabs/matter/releases)
+See the [GitHub release notes](https://github.com/SiliconLabs/unify-matter-pc/releases)
 for details on feature additions, bug fixes, and known issues.
 
 ## Unify MPC Detection and Handling of Failing Nodes

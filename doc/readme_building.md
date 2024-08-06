@@ -103,7 +103,7 @@ root@docker:/unify-matter-pc/linux/third_party/connectedhomeip/examples/chip-too
 ## Troubleshooting
 
 1. If you do not source the `connectedhomeip/scripts/activate.sh` as described above in
-   [Set Up the Matter Build Environment](https://github.com/SiliconLabs/matter/blob/latest/docs/silabs/general/SOFTWARE_REQUIREMENTS.md),
+   [Activate Matter development environment](#activate-matter-development-environment),
    `gn` and other common build tools will not be found.
 2. If you are compiling unit tests, do not try to compile the Unify Matter
    Protocol Controller at the same time. This will not work as when compiling unit tests you
