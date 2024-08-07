@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Unify Matter Protocol Controller Overview &mdash; Unify Matter PC 0.1.2 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=19f00094" />
+      <link rel="stylesheet" type="text/css" href="_static/tabs.css?v=a5c4661c" />
+      <link rel="stylesheet" type="text/css" href="_static/custom_styles.css?v=f127214a" />
+
+  
+    <link rel="shortcut icon" href="_static/favicon.ico"/>
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="_static/jquery.js?v=5d32c60e"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+        <script src="_static/documentation_options.js?v=92734c54"></script>
+        <script src="_static/doctools.js?v=9a2dae69"></script>
+        <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Unify Matter Protocol Controller User Guide" href="readme_user.html" />
+    <link rel="prev" title="Welcome to Unify Matter PC’s documentation!" href="index.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search"  style="background: #3b82f6" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            Unify Matter PC
+              <img src="_static/logo.png" class="logo" alt="Logo"/>
+          </a>
+              <div class="version">
+                0.1.2
+              </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Overview</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#trying-out-the-unify-matter-pc">Trying Out the Unify Matter PC</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#unify-matter-pc-as-a-protocol-controller">Unify Matter PC as a Protocol Controller</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#unify-mpc-detection-and-handling-of-failing-nodes">Unify MPC Detection and Handling of Failing Nodes</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#message-transmission-failure">Message Transmission Failure:</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#failed-to-receive-an-acknowledgement">Failed to Receive an Acknowledgement:</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#periodic-attribute-reporting-failure">Periodic Attribute Reporting Failure:</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#unify-mpc-recovery-of-failing-offline-nodes">Unify MPC Recovery Of Failing/Offline Nodes:</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#auto-recovery-process">Auto-Recovery Process</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#message-based-recovery">Message based Recovery</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#unify-mpc-detection-and-handling-of-decommission">Unify MPC Detection and Handling of Decommission</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#supported-clusters-devices">Supported Clusters/Devices</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#next-steps">Next Steps</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="readme_user.html">User Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="developer_guide.html">Developer Guide</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu"  style="background: #3b82f6" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">Unify Matter PC</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Unify Matter Protocol Controller Overview</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/readme_overview.md.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section class="tex2jax_ignore mathjax_ignore" id="unify-matter-protocol-controller-overview">
+<h1>Unify Matter Protocol Controller Overview<a class="headerlink" href="#unify-matter-protocol-controller-overview" title="Link to this heading"></a></h1>
+<p>The Unify Matter Protocol Controller(UMPC) is an application that makes Matter capable devices on a Matter fabric accessible on a Unify network. It does so by acting
+as a <em>Protocol Controller</em> in a Unify Framework.</p>
+<p>In the Unify Framework, <em>protocol controllers</em> translate raw wireless
+application protocols such as Z-Wave and Zigbee into a common API called the
+Unify Controller Language (UCL). This enables IoT services to operate and
+monitor Z-Wave and Zigbee networks without being aware of the underlying
+wireless protocol.</p>
+<p>In Unify, the transport between IoT services and Protocol Controllers is MQTT
+using JSON payloads for data representation.</p>
+<p>On the Matter fabric, the Unify Matter Protocol Controller is a Matter controller that is able to control/operate on the Matter end devices.</p>
+<p>The figure below illustrates the system architecture of the Unify Matter PC
+in both Unify and Matter system.</p>
+<p><img alt="UnifyMatterPCSystem" src="_images/UnifyMPCSystem.png" /></p>
+<p>More Information about the Unify Framework can be found
+<a class="reference external" href="https://siliconlabs.github.io/UnifySDK/doc/UnifySDK.html">here</a></p>
+<section id="trying-out-the-unify-matter-pc">
+<h2>Trying Out the Unify Matter PC<a class="headerlink" href="#trying-out-the-unify-matter-pc" title="Link to this heading"></a></h2>
+<p>To test the Unify Matter PC, a Raspberry Pi 4 is recommended. Install the
+latest release of the Unify SDK following the
+<a class="reference external" href="https://siliconlabs.github.io/UnifySDK/doc/getting_started.html">Unify Host SDK Getting Started Guide</a>.
+Once the base Unify system is up and running, the Unify Matter PC may be
+installed on the Raspberry Pi 4.</p>
+<p>The
+<a class="reference external" href="https://github.com/SiliconLabs/unify-matter-pc/releases">Silicon Labs Matter PC release</a>
+contains ready-to-use binaries of the chip-tool and package of the Unify Matter PC.</p>
+<blockquote>
+<div><p>Note that the Unify Host SDK uses Raspberry Pi OS as the base system as
+opposed to the standard Ubuntu system used for the Matter OpenThread Border
+Router image.</p>
+</div></blockquote>
+</section>
+<section id="unify-matter-pc-as-a-protocol-controller">
+<h2>Unify Matter PC as a Protocol Controller<a class="headerlink" href="#unify-matter-pc-as-a-protocol-controller" title="Link to this heading"></a></h2>
+<p>The Unify Matter PC is a Unify Protocol Controller that allows for control of Matter
+devices from a Unify framework/IoT Service. It translates Unify MQTT publish messages into the corresponding Matter cluster commands and
+attribute update reports back into Unify MQTT publish messages.</p>
+<p>The Unify data model is largely based on the same data model as Matter, making
+the job of the Unify Matter PC relatively simple. There is almost a 1-1
+relationship between them.</p>
+<p>See the <a class="reference external" href="https://github.com/SiliconLabs/unify-matter-pc/releases">GitHub release notes</a>
+for details on feature additions, bug fixes, and known issues.</p>
+</section>
+<section id="unify-mpc-detection-and-handling-of-failing-nodes">
+<h2>Unify MPC Detection and Handling of Failing Nodes<a class="headerlink" href="#unify-mpc-detection-and-handling-of-failing-nodes" title="Link to this heading"></a></h2>
+<p>An end node on Matter Protocol Controller is considered as failing node if any of the following scenarios are observed:</p>
+<ul class="simple">
+<li><p>Message transmission failure</p></li>
+<li><p>Failed to receive an acknowledgement</p></li>
+<li><p>Periodic attribute reporting failure</p></li>
+</ul>
+<section id="message-transmission-failure">
+<h3>Message Transmission Failure:<a class="headerlink" href="#message-transmission-failure" title="Link to this heading"></a></h3>
+<p>When a transmission to a device fails or a command fails to be sent to a node, the node is marked as failing/offline. The Matter Protocol Controller (MPC)
+updates the state of the Unified Node ID (UNID) to “Offline”.  If a transmission to a device fails while it is still being interviewed (during the initial
+setup process), the node is directly marked as failing, and the state is updated to “Offline”.</p>
+</section>
+<section id="failed-to-receive-an-acknowledgement">
+<h3>Failed to Receive an Acknowledgement:<a class="headerlink" href="#failed-to-receive-an-acknowledgement" title="Link to this heading"></a></h3>
+<p>When a command fails to receive acknowledgement from a node, the node is marked as failing/offline.</p>
+</section>
+<section id="periodic-attribute-reporting-failure">
+<h3>Periodic Attribute Reporting Failure:<a class="headerlink" href="#periodic-attribute-reporting-failure" title="Link to this heading"></a></h3>
+<p>A device has certain attributes that need to be reported. We set up periodic reporting for these attributes, and they’re sent at regular intervals. The
+longest interval between reports is MaxIntervalCeiling which can be adjusted in a configuration, it is defaulting to 60 minutes.
+These regular updates aren’t just for syncing attribute data between the device and our system but it also acts as heartbeat for connection. If we haven’t
+received an update within the MaxIntervalCeiling time frame, we try to reconnect to the device to confirm  it’s still available. If we can’t reconnect, we mark it as failing.</p>
+</section>
+</section>
+<section id="unify-mpc-recovery-of-failing-offline-nodes">
+<h2>Unify MPC Recovery Of Failing/Offline Nodes:<a class="headerlink" href="#unify-mpc-recovery-of-failing-offline-nodes" title="Link to this heading"></a></h2>
+<p>When nodes are marked as failing or offline, they need to recover from failing or offline states to become online again. There are multiple recovery mechanisms available as explained below.</p>
+<section id="auto-recovery-process">
+<h3>Auto-Recovery Process<a class="headerlink" href="#auto-recovery-process" title="Link to this heading"></a></h3>
+<p>In the auto-recovery process, nodes that are less likely to recover autonomously are filtered out based on specific criteria. Nodes in non-functional or
+intervening states, which typically require manual intervention for complete recovery, are excluded from the automatic recovery process.</p>
+<section id="recovery-after-boot-up">
+<h4>Recovery After Boot-up<a class="headerlink" href="#recovery-after-boot-up" title="Link to this heading"></a></h4>
+<p>During system boot-up, we attempt to recover select failing nodes on a a first-fail, first-recover approach, ensuring that nodes with recent failures are
+addressed promptly. The auto-recovery is done by attempting to re-subscribe to failing nodes that have been marked as failing for less than 24 hours.
+Auto-recovery attempts are staggered, with a 5-second throttling interval between recovery attempts, and only 2 nodes processed in each attempt. If we
+successfully re-subscribe to a failing node, we remove its from the failing node status and revert its state to what it was before the failure occurred.
+Moreover, these criteria settings are configurable to adapt to varying network conditions and failure rates in <a class="reference internal" href="readme_user.html#mpc-specific-configuration"><span class="std std-ref">mpc specific configuration</span></a>.</p>
+</section>
+</section>
+<section id="message-based-recovery">
+<h3>Message based Recovery<a class="headerlink" href="#message-based-recovery" title="Link to this heading"></a></h3>
+<p>In case of message transmission failure, the failing status will be removed once a command is successfully sent to the node. Upon removal of the failing status, the state is updated to the last known state.
+Incase of acknowledgement failure, the failing status will be removed if node receives any incoming message from the node. Upon removal of the failing status, the state is updated to the last known state.</p>
+</section>
+</section>
+<section id="unify-mpc-detection-and-handling-of-decommission">
+<h2>Unify MPC Detection and Handling of Decommission<a class="headerlink" href="#unify-mpc-detection-and-handling-of-decommission" title="Link to this heading"></a></h2>
+<p>The MPC being matter controller only, does not have any direct knowledge when matter commissioner decommissions any device on the fabric. However, MPC continuously listens to mDNS advertisements from other nodes to detect the commissioning (non-zero ttl in mDNS records) and decommissioning (zero ttl in mDNS records).</p>
+<p>When MPC detects a node is decommissioned, it immediately unsubscribes on any active subscriptions and deletes the corresponding entries for that device in its attribute store. This clearing from attribute store in-turn un-retains all the topics under the nodes UNID indicating to IoT services that the node has been removed from network. In the case where MPC itself gets decommissioned, MPC resets itself by clearing entries for all devices it is monitoring/controlling in the fabric and then removes the fabric info from <em>NetworkList</em> attribute of Unify State and updates its state back to <em>Online Non-functional</em>.</p>
+</section>
+<section id="supported-clusters-devices">
+<h2>Supported Clusters/Devices<a class="headerlink" href="#supported-clusters-devices" title="Link to this heading"></a></h2>
+<p>The Unify Matter PC currently supports mapping the following clusters/device
+types.</p>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Cluster</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>OnOff</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="next-steps">
+<h2>Next Steps<a class="headerlink" href="#next-steps" title="Link to this heading"></a></h2>
+<ul class="simple">
+<li><p><a class="reference internal" href="readme_building.html"><span class="std std-doc">Building the Matter PC</span></a></p></li>
+<li><p><a class="reference internal" href="readme_user.html#running-the-matter-pc"><span class="std std-ref">Running the Matter PC</span></a></p></li>
+<li><p><a class="reference internal" href="readme_user.html#control-an-onoff-device"><span class="std std-ref">Controlling a Matter OnOff device</span></a></p></li>
+</ul>
+<p>For more information about the Unify SDK see
+<a class="reference external" href="https://siliconlabs.github.io/UnifySDK/doc/UnifySDK.html">Unify Host SDK Documentation</a></p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+    <hr/>
+    <p>Copyright © 2024 Silicon Laboratories. All rights reserved.</p>
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+    <!-- Theme Analytics -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-XXXXXXXXXX"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+
+      gtag('config', 'G-XXXXXXXXXX', {
+          'anonymize_ip': false,
+      });
+    </script> 
+
+</body>
+</html>
